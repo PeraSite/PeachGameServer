@@ -1,9 +1,11 @@
 ﻿using System;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
 using log4net;
+using PeachGame.Common.Packets;
+using PeachGame.Common.Packets.Client;
 
 namespace PeachGame.Server;
 
@@ -28,22 +30,53 @@ public class GameServer : IDisposable {
 		Logger.Debug($"Server started at {_server.LocalEndpoint}");
 
 		while (true) {
-			var tcpClient = await _server.AcceptTcpClientAsync().ConfigureAwait(false);
-			HandleClient(tcpClient);
+			try {
+				var tcpClient = await _server.AcceptTcpClientAsync();
+				HandleClientJoin(tcpClient);
+			}
+			catch (SocketException) { }
+			catch (Exception e) {
+				Console.WriteLine(e);
+				throw;
+			}
 		}
 	}
 
-	private async void HandleClient(TcpClient tcpClient) {
-		Logger.Debug($"Handling client {tcpClient.Client.RemoteEndPoint}");
-		NetworkStream stream = tcpClient.GetStream();
+	private void HandleClientJoin(TcpClient tcpClient) {
+		Logger.Info($"Client connected from {tcpClient.Client.RemoteEndPoint}");
 
-		byte[] buffer = new byte[1024];
-		int readBytes = await stream.ReadAsync(buffer);
-		string message = Encoding.UTF8.GetString(buffer, 0, readBytes);
-		Console.WriteLine($"Server received: {message}");
+		var playerConnection = new PlayerConnection(tcpClient);
 
-		buffer = Encoding.UTF8.GetBytes(message);
-		await stream.WriteAsync(buffer);
-		await stream.FlushAsync();
+		Task.Run(() => {
+			try {
+				while (playerConnection.Client.Connected) {
+					var basePacket = playerConnection.ReadPacket();
+
+					if (basePacket == null) break;
+
+					switch (basePacket) {
+						case ClientPingPacket packet: {
+							Logger.Info($"[C -> S] {packet}");
+							break;
+						}
+					}
+				}
+			}
+			catch (SocketException) { } // 클라이언트 강제 종료
+			catch (Exception e) {
+				Console.WriteLine(e);
+				throw;
+			}
+			finally {
+				HandleClientQuit(playerConnection);
+			}
+		});
+	}
+
+	private void HandleClientQuit(PlayerConnection playerConnection) {
+		Logger.Info($"Client disconnected from {playerConnection.Ip}");
+
+		// 클라이언트 닫기
+		playerConnection.Dispose();
 	}
 }

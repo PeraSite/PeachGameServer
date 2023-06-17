@@ -15,6 +15,7 @@ namespace PeachGame.Common.Packets.Client {
 		public void Serialize(BinaryWriter writer) {
 			writer.Write(ClientId);
 		}
+
 		public void Deserialize(BinaryReader reader) {
 			ClientId = reader.ReadGuid();
 		}
