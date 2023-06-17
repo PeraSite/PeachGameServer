@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading.Tasks;
 using log4net;
 
@@ -28,11 +29,21 @@ public class GameServer : IDisposable {
 
 		while (true) {
 			var tcpClient = await _server.AcceptTcpClientAsync().ConfigureAwait(false);
-			await Task.Factory.StartNew(() => HandleClient(tcpClient));
+			HandleClient(tcpClient);
 		}
 	}
 
 	private async void HandleClient(TcpClient tcpClient) {
 		Logger.Debug($"Handling client {tcpClient.Client.RemoteEndPoint}");
+		NetworkStream stream = tcpClient.GetStream();
+
+		byte[] buffer = new byte[1024];
+		int readBytes = await stream.ReadAsync(buffer);
+		string message = Encoding.UTF8.GetString(buffer, 0, readBytes);
+		Console.WriteLine($"Server received: {message}");
+
+		buffer = Encoding.UTF8.GetBytes(message);
+		await stream.WriteAsync(buffer);
+		await stream.FlushAsync();
 	}
 }
