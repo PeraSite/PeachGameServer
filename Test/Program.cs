@@ -1,10 +1,8 @@
 ﻿using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using PeachGame.Common.Packets.Client;
 using PeachGame.Common.Serialization;
-
 async Task Connect() {
 	TcpClient client = new TcpClient();
 	await client.ConnectAsync(IPAddress.Loopback, 9000);

@@ -65,4 +65,19 @@ public class PlayerConnection : IDisposable {
 		Client.Dispose();
 		GC.SuppressFinalize(this);
 	}
+
+	protected bool Equals(PlayerConnection other) {
+		return Ip.Equals(other.Ip);
+	}
+
+	public override bool Equals(object? obj) {
+		if (ReferenceEquals(null, obj)) return false;
+		if (ReferenceEquals(this, obj)) return true;
+		if (obj.GetType() != this.GetType()) return false;
+		return Equals((PlayerConnection)obj);
+	}
+
+	public override int GetHashCode() {
+		return Ip.GetHashCode();
+	}
 }

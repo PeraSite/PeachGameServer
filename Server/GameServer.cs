@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using log4net;
 using PeachGame.Common.Packets;
 using PeachGame.Common.Packets.Client;
+using PeachGame.Common.Packets.Server;
 
 namespace PeachGame.Server;
 
@@ -15,9 +17,12 @@ public class GameServer : IDisposable {
 	private readonly TcpListener _server;
 	private readonly ConcurrentQueue<(PlayerConnection playerConnection, IPacket packet)> _receivedPacketQueue;
 
+	private readonly Dictionary<PlayerConnection, Guid> _playerConnections;
+
 	public GameServer(int listenPort) {
 		_server = new TcpListener(IPAddress.Any, listenPort);
 		_receivedPacketQueue = new ConcurrentQueue<(PlayerConnection playerConnection, IPacket packet)>();
+		_playerConnections = new Dictionary<PlayerConnection, Guid>();
 	}
 
 	public void Dispose() {
@@ -55,6 +60,7 @@ public class GameServer : IDisposable {
 		Logger.Info($"Client connected from {tcpClient.Client.RemoteEndPoint}");
 
 		var playerConnection = new PlayerConnection(tcpClient);
+		_playerConnections[playerConnection] = Guid.Empty;
 
 		Task.Run(() => {
 			try {
@@ -85,6 +91,7 @@ public class GameServer : IDisposable {
 		playerConnection.Dispose();
 	}
   #endregion
+
 	private void HandlePacket(IPacket basePacket, PlayerConnection playerConnection) {
 		switch (basePacket) {
 			case ClientPingPacket packet: {
@@ -97,6 +104,7 @@ public class GameServer : IDisposable {
 	}
 
 	private void HandleClientPingPacket(PlayerConnection playerConnection, ClientPingPacket packet) {
-		Console.WriteLine($"Ping from {playerConnection.Ip}");
+		_playerConnections[playerConnection] = packet.ClientId;
+		playerConnection.SendPacket(new ServerPongPacket(packet.ClientId));
 	}
 }
