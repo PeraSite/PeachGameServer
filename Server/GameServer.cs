@@ -16,7 +16,6 @@ public class GameServer : IDisposable {
 
 	private readonly TcpListener _server;
 	private readonly ConcurrentQueue<(PlayerConnection playerConnection, IPacket packet)> _receivedPacketQueue;
-
 	private readonly Dictionary<PlayerConnection, Guid> _playerConnections;
 
 	public GameServer(int listenPort) {

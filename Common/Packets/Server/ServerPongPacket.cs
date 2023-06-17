@@ -4,7 +4,7 @@ using PeachGame.Common.Serialization;
 
 namespace PeachGame.Common.Packets.Server {
 	public struct ServerPongPacket : IPacket {
-		public PacketType Type => PacketType.ClientPing;
+		public PacketType Type => PacketType.ServerPong;
 
 		public Guid ClientId { get; private set; }
 

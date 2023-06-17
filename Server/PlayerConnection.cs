@@ -2,12 +2,15 @@
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using log4net;
 using PeachGame.Common.Packets;
 using PeachGame.Common.Serialization;
 
 namespace PeachGame.Server;
 
 public class PlayerConnection : IDisposable {
+	private static readonly ILog Logger = LogManager.GetLogger(typeof(PlayerConnection));
+
 	public TcpClient Client { get; }
 	public NetworkStream Stream { get; }
 	public BinaryReader Reader { get; }
@@ -32,7 +35,7 @@ public class PlayerConnection : IDisposable {
 			var packetType = (PacketType)id;
 
 			var packet = packetType.CreatePacket(Reader);
-			Console.WriteLine($"[C({ToString()}) -> S] {packet}");
+			Logger.Debug($"[C({ToString()}) -> S] {packet}");
 			return packet;
 		}
 		catch (ArgumentOutOfRangeException) {
@@ -47,10 +50,10 @@ public class PlayerConnection : IDisposable {
 	public void SendPacket(IPacket packet) {
 		if (!Stream.CanWrite) return;
 		if (!Client.Connected) {
-			Console.WriteLine($"[S -> C({ToString()})] Cannot send packet due to disconnected: {packet}");
+			Logger.Error($"[S -> C({ToString()})] Cannot send packet due to disconnected: {packet}");
 			return;
 		}
-		Console.WriteLine($"[S -> C({ToString()})] {packet}");
+		Logger.Debug($"[S -> C({ToString()})] {packet}");
 		Writer.Write(packet);
 	}
 
