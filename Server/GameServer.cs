@@ -1,5 +1,5 @@
 ﻿using System;
-using System.IO;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -13,9 +13,11 @@ public class GameServer : IDisposable {
 	private static readonly ILog Logger = LogManager.GetLogger(typeof(GameServer));
 
 	private readonly TcpListener _server;
+	private readonly ConcurrentQueue<(PlayerConnection playerConnection, IPacket packet)> _receivedPacketQueue;
 
 	public GameServer(int listenPort) {
 		_server = new TcpListener(IPAddress.Any, listenPort);
+		_receivedPacketQueue = new ConcurrentQueue<(PlayerConnection playerConnection, IPacket packet)>();
 	}
 
 	public void Dispose() {
@@ -29,19 +31,26 @@ public class GameServer : IDisposable {
 		_server.Start();
 		Logger.Debug($"Server started at {_server.LocalEndpoint}");
 
+		// Packet Dequeue Task
+		Task.Run(() => {
+			while (true) {
+				if (_receivedPacketQueue.TryDequeue(out var tuple)) {
+					var (playerConnection, packet) = tuple;
+
+					// handle packet
+					HandlePacket(packet, playerConnection);
+				}
+			}
+		});
+
+		// 클라이언트 접속 처리
 		while (true) {
-			try {
-				var tcpClient = await _server.AcceptTcpClientAsync();
-				HandleClientJoin(tcpClient);
-			}
-			catch (SocketException) { }
-			catch (Exception e) {
-				Console.WriteLine(e);
-				throw;
-			}
+			var tcpClient = await _server.AcceptTcpClientAsync();
+			HandleClientJoin(tcpClient);
 		}
 	}
 
+	#region Client Handling
 	private void HandleClientJoin(TcpClient tcpClient) {
 		Logger.Info($"Client connected from {tcpClient.Client.RemoteEndPoint}");
 
@@ -50,16 +59,12 @@ public class GameServer : IDisposable {
 		Task.Run(() => {
 			try {
 				while (playerConnection.Client.Connected) {
-					var basePacket = playerConnection.ReadPacket();
+					var packet = playerConnection.ReadPacket();
 
-					if (basePacket == null) break;
+					if (packet == null) break;
 
-					switch (basePacket) {
-						case ClientPingPacket packet: {
-							Logger.Info($"[C -> S] {packet}");
-							break;
-						}
-					}
+					// 패킷 큐에 추가
+					_receivedPacketQueue.Enqueue((playerConnection, packet));
 				}
 			}
 			catch (SocketException) { } // 클라이언트 강제 종료
@@ -78,5 +83,20 @@ public class GameServer : IDisposable {
 
 		// 클라이언트 닫기
 		playerConnection.Dispose();
+	}
+  #endregion
+	private void HandlePacket(IPacket basePacket, PlayerConnection playerConnection) {
+		switch (basePacket) {
+			case ClientPingPacket packet: {
+				HandleClientPingPacket(playerConnection, packet);
+				break;
+			}
+			default:
+				throw new ArgumentOutOfRangeException(nameof(basePacket));
+		}
+	}
+
+	private void HandleClientPingPacket(PlayerConnection playerConnection, ClientPingPacket packet) {
+		Console.WriteLine($"Ping from {playerConnection.Ip}");
 	}
 }

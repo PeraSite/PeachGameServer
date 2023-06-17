@@ -23,16 +23,25 @@ public class PlayerConnection : IDisposable {
 
 	public IPacket? ReadPacket() {
 		var id = Stream.ReadByte();
-		
+
 		// 더 이상 읽을 바이트가 없다면 리턴
 		if (id == -1) return null;
 
-		// 타입에 맞는 패킷 객체 생성
-		var packetType = (PacketType)id;
-		var packet = packetType.CreatePacket(Reader);
-		Console.WriteLine($"[C({ToString()}) -> S] {packet}");
+		try {
+			// 타입에 맞는 패킷 객체 생성
+			var packetType = (PacketType)id;
 
-		return packet;
+			var packet = packetType.CreatePacket(Reader);
+			Console.WriteLine($"[C({ToString()}) -> S] {packet}");
+			return packet;
+		}
+		catch (ArgumentOutOfRangeException) {
+			return null;
+		}
+		catch (Exception e) {
+			Console.WriteLine(e);
+			return null;
+		}
 	}
 
 	public void SendPacket(IPacket packet) {
