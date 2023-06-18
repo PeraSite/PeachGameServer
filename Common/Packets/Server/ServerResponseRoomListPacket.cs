@@ -16,10 +16,11 @@ namespace PeachGame.Common.Packets.Server {
 		public void Serialize(BinaryWriter writer) {
 			writer.Write(InfoList.Count);
 			foreach (var info in InfoList) {
-				writer.Write(info.CurrentPlayers);
-				writer.Write(info.MaxPlayers);
+				writer.Write(info.RoomId);
 				writer.Write(info.Name);
 				writer.Write((byte)info.State);
+				writer.Write(info.CurrentPlayers);
+				writer.Write(info.MaxPlayers);
 			}
 		}
 
@@ -28,10 +29,11 @@ namespace PeachGame.Common.Packets.Server {
 			InfoList = new List<RoomInfo>(count);
 			for (var i = 0; i < count; i++) {
 				var info = new RoomInfo {
+					RoomId = reader.ReadInt32(),
+					Name = reader.ReadString(),
+					State = (RoomState)reader.ReadByte(),
 					CurrentPlayers = reader.ReadInt32(),
 					MaxPlayers = reader.ReadInt32(),
-					Name = reader.ReadString(),
-					State = (RoomState)reader.ReadByte()
 				};
 				InfoList.Add(info);
 			}

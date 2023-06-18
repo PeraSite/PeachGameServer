@@ -6,6 +6,10 @@ namespace PeachGame.Common.Packets.Client {
 
 		public int RoomId { get; private set; }
 
+		public ClientRequestJoinRoomPacket(int roomId) {
+			RoomId = roomId;
+		}
+
 		public void Serialize(BinaryWriter writer) {
 			writer.Write(RoomId);
 		}
