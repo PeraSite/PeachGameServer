@@ -4,22 +4,12 @@ namespace PeachGame.Common.Packets.Client {
 	public struct ClientRequestRoomListPacket : IPacket {
 		public PacketType Type => PacketType.ClientRequestRoomList;
 
-		public string Name { get; private set; }
+		public void Serialize(BinaryWriter writer) { }
 
-		public ClientRequestRoomListPacket(string name) {
-			Name = name;
-		}
-
-		public void Serialize(BinaryWriter writer) {
-			writer.Write(Name);
-		}
-
-		public void Deserialize(BinaryReader reader) {
-			Name = reader.ReadString();
-		}
+		public void Deserialize(BinaryReader reader) { }
 
 		public override string ToString() {
-			return $"{nameof(ClientRequestCreateRoomPacket)} {{ {nameof(Name)}: {Name}}}";
+			return $"{nameof(ClientRequestRoomListPacket)} {{}}";
 		}
 	}
 }
