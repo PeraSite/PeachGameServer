@@ -90,7 +90,7 @@ public class Room {
 		BroadcastPacket(new ServerRoomStatePacket(GetRoomInfo()));
 	}
 
-	private void BroadcastPacket(IPacket packet) {
+	public void BroadcastPacket(IPacket packet) {
 		foreach (PlayerConnection connection in Players) {
 			connection.SendPacket(packet);
 		}

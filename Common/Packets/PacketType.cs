@@ -21,6 +21,8 @@ namespace PeachGame.Common.Packets {
 		ServerResponseQuitRoom,
 
 		ServerRoomState,
+
+		ClientChat,
 	}
 
 	public static class PacketTypes {
@@ -43,6 +45,7 @@ namespace PeachGame.Common.Packets {
 
 				PacketType.ServerRoomState => new ServerRoomStatePacket(),
 
+				PacketType.ClientChat => new ClientChatPacket(),
 				_ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
 			};
 			packet.Deserialize(reader);

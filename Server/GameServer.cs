@@ -134,6 +134,10 @@ public class GameServer : IDisposable {
 				HandleClientRequestQuitRoomPacket(playerConnection, packet);
 				break;
 			}
+			case ClientChatPacket packet: {
+				HandleClientChatPacket(playerConnection, packet);
+				break;
+			}
 			default:
 				throw new ArgumentOutOfRangeException(nameof(basePacket));
 		}
@@ -224,5 +228,18 @@ public class GameServer : IDisposable {
 			_rooms.Remove(room);
 			Logger.Info($"Room {room.RoomName} ({room.RoomId}) removed");
 		}
+	}
+
+	private void HandleClientChatPacket(PlayerConnection playerConnection, ClientChatPacket packet) {
+		// 해당 ID의 방 찾기
+		var room = _rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
+
+		if (room == null) {
+			Logger.Error($"Room not found for {playerConnection.Nickname} ({playerConnection.Id})");
+			return;
+		}
+
+		// 방을 찾았다면, 채팅 메시지 Broadcast
+		room.BroadcastPacket(packet);
 	}
 }
