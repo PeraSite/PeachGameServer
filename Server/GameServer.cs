@@ -117,6 +117,10 @@ public class GameServer : IDisposable {
 				HandleClientRequestJoinRoomPacket(playerConnection, packet);
 				break;
 			}
+			case ClientRequestQuitRoomPacket packet: {
+				HandleClientRequestQuitRoomPacket(playerConnection, packet);
+				break;
+			}
 			default:
 				throw new ArgumentOutOfRangeException(nameof(basePacket));
 		}
@@ -125,46 +129,30 @@ public class GameServer : IDisposable {
 	private void HandleClientPingPacket(PlayerConnection playerConnection, ClientPingPacket packet) {
 		_playerConnections[playerConnection] = packet.ClientId;
 		playerConnection.Id = packet.ClientId;
+		playerConnection.Nickname = packet.Nickname;
 		playerConnection.SendPacket(new ServerPongPacket(packet.ClientId));
 	}
 
 	private void HandleClientRequestRoomListPacket(PlayerConnection playerConnection, ClientRequestRoomListPacket packet) {
 		playerConnection.SendPacket(new ServerResponseRoomListPacket(_rooms.Select(x => x.GetRoomInfo()).ToList()));
-		playerConnection.SendPacket(new ServerResponseRoomListPacket(new List<RoomInfo> {
-			new RoomInfo {
-				RoomId = 0,
-				CurrentPlayers = Random.Shared.Next(4),
-				MaxPlayers = 4,
-				Name = "테스트 방",
-				State = RoomState.Waiting
-			},
-			new RoomInfo {
-				RoomId = 1,
-				CurrentPlayers = Random.Shared.Next(4),
-				MaxPlayers = 4,
-				Name = "테스트 방 2",
-				State = RoomState.Playing
-			},
-			new RoomInfo {
-				RoomId = 2,
-				CurrentPlayers = Random.Shared.Next(4),
-				MaxPlayers = 4,
-				Name = "테스트 방 333",
-				State = RoomState.Ending
-			},
-		}));
 	}
 
 	private void HandleClientRequestCreateRoomPacket(PlayerConnection playerConnection, ClientRequestCreateRoomPacket packet) {
 		var roomName = packet.Name;
 		var roomId = _lastRoomId++;
 
+		// 새로운 방 생성 후 추가
 		var room = new Room(roomName, roomId, playerConnection);
 		_rooms.Add(room);
 
+		// 방 생성 알림 -> 씬 이동
 		playerConnection.SendPacket(new ServerResponseCreateRoomPacket(roomId));
-	}
 
+		// 방 상태 업데이트 -> UI 표기
+		room.BroadcastState();
+
+		Logger.Info($"Room created: {roomName} ({roomId})");
+	}
 
 	private void HandleClientRequestJoinRoomPacket(PlayerConnection playerConnection, ClientRequestJoinRoomPacket packet) {
 		var roomId = packet.RoomId;
@@ -187,6 +175,45 @@ public class GameServer : IDisposable {
 			return;
 		}
 
+		// 방 접속 알림 -> 씬 이동
 		playerConnection.SendPacket(new ServerResponseJoinRoomPacket(true));
+
+		// 방 상태 업데이트 -> UI 표기
+		room.AddPlayer(playerConnection);
+
+		Logger.Info($"Player {playerConnection.Nickname} joined room: {room.RoomName} ({room.RoomId})");
+	}
+
+	private void HandleClientRequestQuitRoomPacket(PlayerConnection playerConnection, ClientRequestQuitRoomPacket packet) {
+		var roomId = packet.RoomId;
+
+		// 해당 ID의 방 찾기
+		var room = _rooms.FirstOrDefault(x => x.RoomId == roomId);
+
+		// 방이 없다면
+		if (room == null) {
+			playerConnection.SendPacket(new ServerResponseQuitRoomPacket(false, "방이 존재하지 않습니다."));
+			return;
+		}
+
+		// 해당 방에 플레이어가 존재하지 않다면
+		if (!room.Players.Contains(playerConnection)) {
+			playerConnection.SendPacket(new ServerResponseQuitRoomPacket(false, "해당 방의 참가자가 아닙니다."));
+			return;
+		}
+
+		// 방 퇴장 알림 -> 씬 이동
+		playerConnection.SendPacket(new ServerResponseQuitRoomPacket(true));
+
+		// 방 상태 업데이트 -> UI 표기
+		room.RemovePlayer(playerConnection);
+
+		Logger.Info($"Player {playerConnection.Nickname} quit room: {room.RoomName} ({room.RoomId})");
+
+		// 만약 유저가 나갔는데 방이 비었다면
+		if (room.IsEmpty()) {
+			_rooms.Remove(room);
+			Logger.Info($"Room {room.RoomName} ({room.RoomId}) removed");
+		}
 	}
 }

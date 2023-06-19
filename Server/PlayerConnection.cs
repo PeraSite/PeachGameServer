@@ -18,12 +18,16 @@ public class PlayerConnection : IDisposable {
 	public IPEndPoint Ip => (IPEndPoint)Client.Client.RemoteEndPoint!;
 
 	public Guid Id;
+	public string Nickname;
 
 	public PlayerConnection(TcpClient client) {
 		Client = client;
 		Stream = Client.GetStream();
 		Writer = new BinaryWriter(Stream);
 		Reader = new BinaryReader(Stream);
+
+		Id = Guid.Empty;
+		Nickname = string.Empty;
 	}
 
 	public IPacket? ReadPacket() {

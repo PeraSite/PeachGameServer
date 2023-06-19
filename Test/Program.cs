@@ -9,7 +9,7 @@ async Task Connect() {
 
 	NetworkStream stream = client.GetStream();
 
-	var sendPacket = new ClientPingPacket(Guid.NewGuid());
+	var sendPacket = new ClientPingPacket(Guid.NewGuid(), "Client Nickname");
 	await using BinaryWriter bw = new BinaryWriter(stream);
 
 	bw.Write(sendPacket);

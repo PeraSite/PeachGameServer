@@ -2,7 +2,7 @@
 using PeachGame.Common.Serialization;
 
 namespace PeachGame.Common.Models {
-	public struct LobbyPlayer : ISerializable {
+	public struct PlayerInfo : ISerializable {
 		public string Nickname;
 		public bool IsOwner;
 
