@@ -17,6 +17,7 @@ namespace PeachGame.Common.Packets {
 		ClientRequestJoinRoom,
 		ServerResponseJoinRoom,
 
+		ServerLobbyStatusPacket,
 	}
 
 	public static class PacketTypes {
@@ -33,6 +34,8 @@ namespace PeachGame.Common.Packets {
 
 				PacketType.ClientRequestJoinRoom => new ClientRequestJoinRoomPacket(),
 				PacketType.ServerResponseJoinRoom => new ServerResponseJoinRoomPacket(),
+
+				PacketType.ServerLobbyStatusPacket => new ServerLobbyStatusPacket(),
 
 				_ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
 			};

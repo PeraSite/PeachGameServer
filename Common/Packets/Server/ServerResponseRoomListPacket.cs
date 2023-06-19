@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using PeachGame.Common.Models;
+using PeachGame.Common.Serialization;
 
 namespace PeachGame.Common.Packets.Server {
 	public struct ServerResponseRoomListPacket : IPacket {
@@ -14,29 +15,11 @@ namespace PeachGame.Common.Packets.Server {
 		}
 
 		public void Serialize(BinaryWriter writer) {
-			writer.Write(InfoList.Count);
-			foreach (var info in InfoList) {
-				writer.Write(info.RoomId);
-				writer.Write(info.Name);
-				writer.Write((byte)info.State);
-				writer.Write(info.CurrentPlayers);
-				writer.Write(info.MaxPlayers);
-			}
+			writer.Write(InfoList);
 		}
 
 		public void Deserialize(BinaryReader reader) {
-			var count = reader.ReadInt32();
-			InfoList = new List<RoomInfo>(count);
-			for (var i = 0; i < count; i++) {
-				var info = new RoomInfo {
-					RoomId = reader.ReadInt32(),
-					Name = reader.ReadString(),
-					State = (RoomState)reader.ReadByte(),
-					CurrentPlayers = reader.ReadInt32(),
-					MaxPlayers = reader.ReadInt32(),
-				};
-				InfoList.Add(info);
-			}
+			InfoList = reader.ReadSerializableList<RoomInfo>();
 		}
 
 		public override string ToString() {
