@@ -4,16 +4,19 @@ namespace PeachGame.Common.Packets.Server {
 	public struct ServerResponseJoinRoomPacket : IPacket {
 		public PacketType Type => PacketType.ServerResponseJoinRoom;
 
+		public int RoomId { get; private set; }
 		public bool Success { get; private set; }
 		public string ErrorMessage { get; private set; }
 
-		public ServerResponseJoinRoomPacket(bool success) {
-			Success = success;
+		public ServerResponseJoinRoomPacket(int roomId) {
+			RoomId = roomId;
+			Success = true;
 			ErrorMessage = string.Empty;
 		}
 
-		public ServerResponseJoinRoomPacket(bool success, string errorMessage) {
-			Success = success;
+		public ServerResponseJoinRoomPacket(string errorMessage) {
+			RoomId = -1;
+			Success = false;
 			ErrorMessage = errorMessage;
 		}
 
@@ -28,7 +31,7 @@ namespace PeachGame.Common.Packets.Server {
 		}
 
 		public override string ToString() {
-			return $"{nameof(ServerResponseJoinRoomPacket)} {{ {nameof(Success)}: {Success}, {nameof(ErrorMessage)}: {ErrorMessage}}}";
+			return $"{nameof(ServerResponseJoinRoomPacket)} {{ {nameof(Success)}: {Success}, {nameof(ErrorMessage)}: {ErrorMessage}, {nameof(RoomId)}: {RoomId}}}";
 		}
 	}
 }

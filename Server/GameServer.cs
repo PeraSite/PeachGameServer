@@ -92,6 +92,19 @@ public class GameServer : IDisposable {
 	}
 
 	private void HandleClientQuit(PlayerConnection playerConnection) {
+		// 방에 존재한 플레이어였는지 확인
+		var room = _rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
+		if (room != null) {
+			// 방에 있었다면 방에서 제거
+			room.RemovePlayer(playerConnection);
+
+			// 방이 비었다면 방 제거
+			if (room.IsEmpty()) {
+				_rooms.Remove(room);
+				Logger.Info($"Room {room.RoomName} ({room.RoomId}) removed");
+			}
+		}
+
 		Logger.Info($"Client disconnected from {playerConnection.Ip}");
 
 		// 클라이언트 닫기
@@ -159,29 +172,27 @@ public class GameServer : IDisposable {
 
 		// 모든 방의 ID가 주어진 ID와 모두 다르다면(=같은 ID인 방이 없다면)
 		if (_rooms.All(x => x.RoomId != roomId)) {
-			playerConnection.SendPacket(new ServerResponseJoinRoomPacket(false, "방이 존재하지 않습니다."));
+			playerConnection.SendPacket(new ServerResponseJoinRoomPacket("방이 존재하지 않습니다."));
 			return;
 		}
 
 		var room = _rooms.First(x => x.RoomId == roomId);
 
 		if (room.IsFull()) {
-			playerConnection.SendPacket(new ServerResponseJoinRoomPacket(false, "방이 꽉 찼습니다."));
+			playerConnection.SendPacket(new ServerResponseJoinRoomPacket("방이 꽉 찼습니다."));
 			return;
 		}
 
 		if (!room.IsAvailable()) {
-			playerConnection.SendPacket(new ServerResponseJoinRoomPacket(false, "방에 들어갈 수 없습니다."));
+			playerConnection.SendPacket(new ServerResponseJoinRoomPacket("방에 들어갈 수 없습니다."));
 			return;
 		}
 
 		// 방 접속 알림 -> 씬 이동
-		playerConnection.SendPacket(new ServerResponseJoinRoomPacket(true));
+		playerConnection.SendPacket(new ServerResponseJoinRoomPacket(roomId));
 
 		// 방 상태 업데이트 -> UI 표기
 		room.AddPlayer(playerConnection);
-
-		Logger.Info($"Player {playerConnection.Nickname} joined room: {room.RoomName} ({room.RoomId})");
 	}
 
 	private void HandleClientRequestQuitRoomPacket(PlayerConnection playerConnection, ClientRequestQuitRoomPacket packet) {
@@ -207,8 +218,6 @@ public class GameServer : IDisposable {
 
 		// 방 상태 업데이트 -> UI 표기
 		room.RemovePlayer(playerConnection);
-
-		Logger.Info($"Player {playerConnection.Nickname} quit room: {room.RoomName} ({room.RoomId})");
 
 		// 만약 유저가 나갔는데 방이 비었다면
 		if (room.IsEmpty()) {

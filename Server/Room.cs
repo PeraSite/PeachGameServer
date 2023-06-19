@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using log4net;
 using PeachGame.Common.Models;
 using PeachGame.Common.Packets;
 using PeachGame.Common.Packets.Server;
@@ -8,6 +9,7 @@ using PeachGame.Common.Packets.Server;
 namespace PeachGame.Server;
 
 public class Room {
+	private static ILog Logger = LogManager.GetLogger(typeof(Room));
 	private const int MAX_PLAYER = 4;
 
 	private RoomState _state;
@@ -37,12 +39,16 @@ public class Room {
 	public void AddPlayer(PlayerConnection playerConnection) {
 		if (IsFull()) throw new InvalidOperationException("Room is full");
 
+		Logger.Debug($"Player {playerConnection.Nickname} join to {RoomName}({RoomId})");
+
 		// 플레이어 목록 추가 후 상태 Broadcast
 		Players.Add(playerConnection);
 		BroadcastState();
 	}
 
 	public void RemovePlayer(PlayerConnection playerConnection) {
+		Logger.Debug($"Player {playerConnection.Nickname} left room {RoomName}({RoomId})");
+
 		// 플레이어 목록 제거 후 상태 Broadcast
 		Players.Remove(playerConnection);
 
