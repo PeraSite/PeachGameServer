@@ -15,13 +15,13 @@ namespace PeachGame.Common.Serialization {
 			return packetType.CreatePacket(reader);
 		}
 
-		public static T ReadSerializable<T>(this BinaryReader reader) where T : ISerializable {
-			var serializable = Activator.CreateInstance<T>();
+		public static T ReadSerializable<T>(this BinaryReader reader) where T : ISerializable, new() {
+			var serializable = new T();
 			serializable.Deserialize(reader);
 			return serializable;
 		}
 
-		public static List<T> ReadSerializableList<T>(this BinaryReader reader) where T : ISerializable {
+		public static List<T> ReadSerializableList<T>(this BinaryReader reader) where T : ISerializable, new() {
 			var count = reader.ReadInt32();
 			var list = new List<T>(count);
 			for (var i = 0; i < count; i++) {
