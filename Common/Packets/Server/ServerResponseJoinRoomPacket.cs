@@ -21,17 +21,19 @@ namespace PeachGame.Common.Packets.Server {
 		}
 
 		public void Serialize(BinaryWriter writer) {
+			writer.Write(RoomId);
 			writer.Write(Success);
 			writer.Write(ErrorMessage);
 		}
 
 		public void Deserialize(BinaryReader reader) {
+			RoomId = reader.ReadInt32();
 			Success = reader.ReadBoolean();
 			ErrorMessage = reader.ReadString();
 		}
 
 		public override string ToString() {
-			return $"{nameof(ServerResponseJoinRoomPacket)} {{ {nameof(Success)}: {Success}, {nameof(ErrorMessage)}: {ErrorMessage ?? "null"}, {nameof(RoomId)}: {RoomId}}}";
+			return $"{nameof(ServerResponseJoinRoomPacket)} {{ {nameof(Success)}: {Success}, {nameof(ErrorMessage)}: {ErrorMessage}, {nameof(RoomId)}: {RoomId}}}";
 		}
 	}
 }

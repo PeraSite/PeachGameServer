@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using PeachGame.Common.Serialization;
 
 namespace PeachGame.Common.Models {
@@ -26,6 +27,10 @@ namespace PeachGame.Common.Models {
 			State = (RoomState)reader.ReadByte();
 			Players = reader.ReadSerializableList<PlayerInfo>();
 			MaxPlayers = reader.ReadInt32();
+		}
+
+		public override string ToString() {
+			return $"{nameof(RoomInfo)} {{ Id:{RoomId}, Name:{Name}, State:{State}, Players({CurrentPlayers}/{MaxPlayers}): {string.Join(", ", Players.Select(x => x.Nickname))} }}";
 		}
 	}
 }

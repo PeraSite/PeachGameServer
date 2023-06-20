@@ -10,7 +10,7 @@ namespace PeachGame.Common.Serialization {
 		}
 
 		public static IPacket ReadPacket(this BinaryReader reader) {
-			var packetId = reader.ReadInt32();
+			var packetId = reader.ReadByte();
 			var packetType = (PacketType)packetId;
 			return packetType.CreatePacket(reader);
 		}

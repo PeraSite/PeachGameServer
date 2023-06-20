@@ -1,25 +1,36 @@
-﻿using System.Diagnostics;
-using System.Net;
-using System.Net.Sockets;
-using PeachGame.Common.Packets.Client;
+﻿using PeachGame.Common.Models;
+using PeachGame.Common.Packets;
+using PeachGame.Common.Packets.Server;
 using PeachGame.Common.Serialization;
-async Task Connect() {
-	TcpClient client = new TcpClient();
-	await client.ConnectAsync(IPAddress.Loopback, 9000);
 
-	NetworkStream stream = client.GetStream();
+var playerList = new List<PlayerInfo>() {
+	new PlayerInfo() {
+		Nickname = "Player 1",
+		IsOwner = true
+	},
+	new PlayerInfo() {
+		Nickname = "Player 2",
+		IsOwner = false
+	},
+};
 
-	var sendPacket = new ClientPingPacket(Guid.NewGuid(), "Client Nickname");
-	await using BinaryWriter bw = new BinaryWriter(stream);
+var roomInfo = new RoomInfo() {
+	Name = "Test Room",
+	State = RoomState.Waiting,
+	MaxPlayers = 4,
+	RoomId = 0,
+	Players = playerList
+};
 
-	bw.Write(sendPacket);
+var packet = new ServerRoomStatePacket(roomInfo);
 
-}
+using var ms = new MemoryStream();
+using var writer = new BinaryWriter(ms);
+writer.Write((IPacket)packet);
 
-// await Connect();
+var bytes = ms.ToArray();
+Console.WriteLine($"Bytes: {string.Join(", ", bytes)}");
 
-IEnumerable<Task> tasks = Enumerable.Range(0, 100).Select(x => Connect());
-var sw = Stopwatch.StartNew();
-await Task.WhenAll(tasks);
-sw.Stop();
-Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms");
+using var reader = new BinaryReader(new MemoryStream(bytes));
+var deserializedRoomInfo = reader.ReadPacket();
+Console.WriteLine($"Deserialized: {deserializedRoomInfo}");
