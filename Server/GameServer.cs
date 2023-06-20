@@ -168,6 +168,8 @@ public class GameServer : IDisposable {
 		// 방 상태 업데이트 -> UI 표기
 		room.BroadcastState();
 
+		room.BroadcastPacket(new ServerLobbyAnnouncePacket("[공지] 방이 생성되었습니다."));
+
 		Logger.Info($"Room created: {roomName} ({roomId})");
 	}
 

@@ -44,6 +44,8 @@ public class Room {
 		// 플레이어 목록 추가 후 상태 Broadcast
 		Players.Add(playerConnection);
 		BroadcastState();
+
+		BroadcastPacket(new ServerLobbyAnnouncePacket($"[공지] {playerConnection.Nickname}님이 입장하셨습니다."));
 	}
 
 	public void RemovePlayer(PlayerConnection playerConnection) {
@@ -58,11 +60,14 @@ public class Room {
 			PlayerConnection? newOwner = Players.FirstOrDefault();
 
 			// 첫 플레이어가 존재할 때만 변경
-			if (newOwner != null)
+			if (newOwner != null) {
 				Owner = newOwner;
+				BroadcastPacket(new ServerLobbyAnnouncePacket($"[공지] {newOwner.Nickname}님이 방장이 되었습니다."));
+			}
 		}
 
 		BroadcastState();
+		BroadcastPacket(new ServerLobbyAnnouncePacket($"[공지] {playerConnection.Nickname}님이 퇴장하셨습니다."));
 	}
 
 	private void StartGame() {
