@@ -64,7 +64,7 @@ public class PlayerConnection : IDisposable {
 	}
 
 	public override string ToString() {
-		return $"{Ip.Address}:{Ip.Port}";
+		return string.IsNullOrWhiteSpace(Nickname) ? $"{Ip.Address}:{Ip.Port}" : Nickname;
 	}
 
 	public void Dispose() {
