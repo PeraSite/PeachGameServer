@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using log4net;
 using PeachGame.Common.Models;
 using PeachGame.Common.Packets;
@@ -9,22 +11,21 @@ using PeachGame.Common.Packets.Server;
 namespace PeachGame.Server;
 
 public class Room {
-	private static ILog Logger = LogManager.GetLogger(typeof(Room));
+	private static readonly ILog Logger = LogManager.GetLogger(typeof(Room));
 	private const int MAX_PLAYER = 4;
+	private const int PLAY_TIME = 60 * 2; // 2분
 
-	private RoomState _state;
-	public RoomState State {
-		get => _state;
-		private set {
-			_state = value;
-			BroadcastState();
-		}
-	}
-
+	// 방 상태 관련
 	public readonly string RoomName;
 	public readonly int RoomId;
 	public PlayerConnection Owner;
 	public readonly List<PlayerConnection> Players;
+	private RoomState _state;
+
+	// 플레이 로직 관련
+	private int _leftTime;
+	private CancellationTokenSource _tickCts = new CancellationTokenSource();
+	private Dictionary<PlayerConnection, int> _score;
 
 	public Room(string roomName, int roomId, PlayerConnection owner) {
 		RoomName = roomName;
@@ -34,8 +35,11 @@ public class Room {
 		};
 		Owner = owner;
 		_state = RoomState.Waiting;
+		_leftTime = -1;
+		_score = new Dictionary<PlayerConnection, int>();
 	}
 
+	#region 플레이어 입장 처리 로직
 	public void AddPlayer(PlayerConnection playerConnection) {
 		if (IsFull()) throw new InvalidOperationException("Room is full");
 
@@ -69,15 +73,38 @@ public class Room {
 		BroadcastState();
 		BroadcastPacket(new ServerLobbyAnnouncePacket($"[공지] {playerConnection.Nickname}님이 퇴장하셨습니다."));
 	}
+  #endregion
 
-	private void StartGame() {
-		State = RoomState.Playing;
+	public void StartGame() {
+		_state = RoomState.Playing;
+		_leftTime = PLAY_TIME;
+		_tickCts = new CancellationTokenSource();
+		_score.Clear();
+		BroadcastState();
+
+		// 메인 Update 로직
+		Task.Run(async () => {
+			while (!_tickCts.Token.IsCancellationRequested) {
+				// 남은 시간 초 업데이트
+				_leftTime--;
+				BroadcastState();
+
+				// 게임 종료 체크
+				if (_leftTime <= 0) {
+					StopGame();
+				}
+				await Task.Delay(TimeSpan.FromSeconds(1));
+			}
+		}, _tickCts.Token);
 	}
 
-	private void StopGame() {
-		State = RoomState.Ending;
+	public void StopGame() {
+		_state = RoomState.Ending;
+		_tickCts.Cancel();
+		BroadcastState();
 	}
 
+	#region 유틸 함수
 	public RoomInfo GetRoomInfo() {
 		return new RoomInfo {
 			RoomId = RoomId,
@@ -87,7 +114,9 @@ public class Room {
 				Nickname = player.Nickname
 			}).ToList(),
 			MaxPlayers = MAX_PLAYER,
-			State = _state
+			State = _state,
+			Score = _score.ToDictionary(x => x.Key.Nickname, x => x.Value),
+			LeftTime = _leftTime
 		};
 	}
 
@@ -102,7 +131,7 @@ public class Room {
 	}
 
 	public bool IsEmpty() => Players.Count == 0;
-	public bool IsAvailable() => Players.Count < MAX_PLAYER && State == RoomState.Waiting;
+	public bool IsAvailable() => Players.Count < MAX_PLAYER && _state == RoomState.Waiting;
 	public bool IsFull() => Players.Count == MAX_PLAYER;
 
 	public override string ToString() {
@@ -121,4 +150,5 @@ public class Room {
 	public override int GetHashCode() {
 		return RoomId;
 	}
+  #endregion
 }

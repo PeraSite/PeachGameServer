@@ -114,30 +114,27 @@ public class GameServer : IDisposable {
 
 	private void HandlePacket(IPacket basePacket, PlayerConnection playerConnection) {
 		switch (basePacket) {
-			case ClientPingPacket packet: {
+			case ClientPingPacket packet:
 				HandleClientPingPacket(playerConnection, packet);
 				break;
-			}
-			case ClientRequestRoomListPacket packet: {
+			case ClientRequestRoomListPacket packet:
 				HandleClientRequestRoomListPacket(playerConnection, packet);
 				break;
-			}
-			case ClientRequestCreateRoomPacket packet: {
+			case ClientRequestCreateRoomPacket packet:
 				HandleClientRequestCreateRoomPacket(playerConnection, packet);
 				break;
-			}
-			case ClientRequestJoinRoomPacket packet: {
+			case ClientRequestJoinRoomPacket packet:
 				HandleClientRequestJoinRoomPacket(playerConnection, packet);
 				break;
-			}
-			case ClientRequestQuitRoomPacket packet: {
+			case ClientRequestQuitRoomPacket packet:
 				HandleClientRequestQuitRoomPacket(playerConnection, packet);
 				break;
-			}
-			case ClientChatPacket packet: {
+			case ClientChatPacket packet:
 				HandleClientChatPacket(playerConnection, packet);
 				break;
-			}
+			case ClientRequestStartPacket packet:
+				HandleClientRequestStartPacket(playerConnection, packet);
+				break;
 			default:
 				throw new ArgumentOutOfRangeException(nameof(basePacket));
 		}
@@ -243,5 +240,22 @@ public class GameServer : IDisposable {
 
 		// 방을 찾았다면, 채팅 메시지 Broadcast
 		room.BroadcastPacket(packet);
+	}
+
+	private void HandleClientRequestStartPacket(PlayerConnection playerConnection, ClientRequestStartPacket packet) {
+		// 해당 ID의 방 찾기
+		var room = _rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
+
+		// 방이 없다면 오류
+		if (room == null) {
+			playerConnection.SendPacket(new ServerResponseStartPacket("당신은 방에 참여하고 있지 않습니다."));
+			return;
+		}
+		
+		// 씬 이동시키기
+		room.BroadcastPacket(new ServerResponseStartPacket(room.RoomId));
+
+		// 게임 State 변동
+		room.StartGame();
 	}
 }

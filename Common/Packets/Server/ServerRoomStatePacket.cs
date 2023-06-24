@@ -21,7 +21,7 @@ namespace PeachGame.Common.Packets.Server {
 		}
 
 		public override string ToString() {
-			return $"{nameof(ServerRoomStatePacket)} {{ Name:{RoomInfo.Name}, Players:({RoomInfo.CurrentPlayers}/{RoomInfo.MaxPlayers}) }}";
+			return $"{nameof(ServerRoomStatePacket)} {RoomInfo}";
 		}
 	}
 }

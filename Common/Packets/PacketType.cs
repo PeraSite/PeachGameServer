@@ -25,7 +25,8 @@ namespace PeachGame.Common.Packets {
 		ClientChat,
 		ServerLobbyAnnounce,
 
-		ClientRequestStartPacket,
+		ClientRequestStart,
+		ServerResponseStart
 	}
 
 	public static class PacketTypes {
@@ -51,7 +52,8 @@ namespace PeachGame.Common.Packets {
 				PacketType.ClientChat => new ClientChatPacket(),
 				PacketType.ServerLobbyAnnounce => new ServerLobbyAnnouncePacket(),
 
-				PacketType.ClientRequestStartPacket => new ClientRequestStartPacket(),
+				PacketType.ClientRequestStart => new ClientRequestStartPacket(),
+				PacketType.ServerResponseStart => new ServerResponseStartPacket(),
 				_ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
 			};
 			packet.Deserialize(reader);

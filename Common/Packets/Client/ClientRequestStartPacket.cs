@@ -2,7 +2,7 @@ using System.IO;
 
 namespace PeachGame.Common.Packets.Client {
 	public struct ClientRequestStartPacket : IPacket {
-		public PacketType Type => PacketType.ClientRequestStartPacket;
+		public PacketType Type => PacketType.ClientRequestStart;
 
 		public int RoomId { get; private set; }
 
