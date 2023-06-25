@@ -77,6 +77,7 @@ public class Room {
 
 		// 플레이어 목록 제거 후 상태 Broadcast
 		Players.Remove(playerConnection);
+		_score.Remove(playerConnection);
 
 		// 만약 방장이 나갔다면
 		if (Equals(Owner, playerConnection)) {
@@ -99,7 +100,12 @@ public class Room {
 		_state = RoomState.Playing;
 		_leftTime = PLAY_TIME;
 		_tickCts = new CancellationTokenSource();
+
+		// 점수 초기화
 		_score.Clear();
+		foreach (PlayerConnection playerConnection in Players) {
+			_score[playerConnection] = 0;
+		}
 		BroadcastState();
 
 		// 메인 Update 로직
@@ -139,7 +145,12 @@ public class Room {
 			foreach (var (x, y) in positions) {
 				_map[(x, y)] = 0;
 			}
+
+			// 복숭아 개수만큼 점수 주기
+			_score[playerConnection] = _score.GetValueOrDefault(playerConnection, 0) + positions.Length;
+
 			BroadcastPacket(new ServerResponseDragPacket(playerConnection.Id, positions));
+			BroadcastState();
 		}
 	}
 
@@ -150,6 +161,7 @@ public class Room {
 			Name = RoomName,
 			Players = Players.Select(player => new PlayerInfo {
 				IsOwner = Equals(player, Owner),
+				Id = player.Id,
 				Nickname = player.Nickname
 			}).ToList(),
 			MaxPlayers = MAX_PLAYER,
