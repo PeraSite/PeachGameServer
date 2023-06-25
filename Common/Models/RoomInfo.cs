@@ -55,7 +55,7 @@ namespace PeachGame.Common.Models {
 			       $"Id:{RoomId}, " +
 			       $"Name:{Name}, " +
 			       $"State:{State}, " +
-			       $"Owner: {Owner}" +
+			       $"Owner: {Owner}, " +
 			       $"Players({CurrentPlayers}/{MaxPlayers}): {string.Join(", ", Players.Select(x => x.Nickname))}, " +
 			       $"Score: {string.Join(", ", Score.Select(x => $"{x.Key}={x.Value}"))}, " +
 			       $"LeftTime: {LeftTime}}}";

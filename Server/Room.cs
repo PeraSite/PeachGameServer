@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using log4net;
 using PeachGame.Common.Models;
 using PeachGame.Common.Packets;
+using PeachGame.Common.Packets.Client;
 using PeachGame.Common.Packets.Server;
 
 namespace PeachGame.Server;
@@ -14,6 +15,8 @@ public class Room {
 	private static readonly ILog Logger = LogManager.GetLogger(typeof(Room));
 	private const int MAX_PLAYER = 4;
 	private const int PLAY_TIME = 60 * 2; // 2분
+	private const int PEACH_COUNT = 200;
+	private const int PEACH_COLUMN = 20;
 
 	// 방 상태 관련
 	public readonly string RoomName;
@@ -28,6 +31,7 @@ public class Room {
 	private int _leftTime;
 	private CancellationTokenSource _tickCts = new CancellationTokenSource();
 	private Dictionary<PlayerConnection, int> _score;
+	private Dictionary<(int x, int y), int> _map;
 
 	public Room(string roomName, int roomId, PlayerConnection owner) {
 		RoomName = roomName;
@@ -43,6 +47,16 @@ public class Room {
 		// 현재 Tick Count로 랜덤 시드 설정 후 랜덤 생성
 		Seed = Environment.TickCount;
 		_random = new Random(Seed);
+
+		// 시드 기반으로 맵 생성
+		_map = new Dictionary<(int x, int y), int>();
+		for (var y = 0; y < PEACH_COUNT / PEACH_COLUMN; y++) {
+			for (var x = 0; x < PEACH_COLUMN; x++) {
+				_map[(x, y)] = _random.Next(1, 10);
+				Console.Write(_map[(x, y)] + " ");
+			}
+			Console.WriteLine();
+		}
 	}
 
 	#region 플레이어 입장 처리 로직
@@ -108,6 +122,25 @@ public class Room {
 		_state = RoomState.Ending;
 		_tickCts.Cancel();
 		BroadcastState();
+	}
+
+	public void HandleDrag(PlayerConnection playerConnection, ClientRequestDragPacket packet) {
+		(int x, int y)[] positions = packet.Positions;
+		var sum = positions.Sum(pos => _map[pos]);
+
+		foreach (var (x, y) in positions) {
+			Logger.Debug($"{x} {y} - {_map[(x, y)]}");
+		}
+		Logger.Debug($"=> Sum : {sum}");
+
+		// 선택한 복숭아의 합이 10이라면
+		if (sum == 10) {
+			// 이미 고른 복숭아는 0으로 리셋(다른 플레이어가 해당 복숭아 못먹음)
+			foreach (var (x, y) in positions) {
+				_map[(x, y)] = 0;
+			}
+			BroadcastPacket(new ServerResponseDragPacket(playerConnection.Id, positions));
+		}
 	}
 
 	#region 유틸 함수

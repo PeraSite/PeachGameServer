@@ -135,6 +135,9 @@ public class GameServer : IDisposable {
 			case ClientRequestStartPacket packet:
 				HandleClientRequestStartPacket(playerConnection, packet);
 				break;
+			case ClientRequestDragPacket packet:
+				HandleClientRequestDragPacket(playerConnection, packet);
+				break;
 			default:
 				throw new ArgumentOutOfRangeException(nameof(basePacket));
 		}
@@ -257,5 +260,18 @@ public class GameServer : IDisposable {
 
 		// 게임 State 변동
 		room.StartGame();
+	}
+
+	private void HandleClientRequestDragPacket(PlayerConnection playerConnection, ClientRequestDragPacket packet) {
+		// 해당 ID의 방 찾기
+		var room = _rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
+
+		// 방이 없다면 오류
+		if (room == null) {
+			Logger.Error($"Room not found for {playerConnection.Nickname} ({playerConnection.Id})");
+			return;
+		}
+
+		room.HandleDrag(playerConnection, packet);
 	}
 }
