@@ -6,7 +6,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using log4net;
-using PeachGame.Common.Models;
 using PeachGame.Common.Packets;
 using PeachGame.Common.Packets.Client;
 using PeachGame.Common.Packets.Server;
@@ -21,14 +20,14 @@ public class GameServer : IDisposable {
 	private readonly Dictionary<PlayerConnection, Guid> _playerConnections;
 
 	// 방 관련 State
-	private readonly List<Room> _rooms;
+	public readonly List<Room> Rooms;
 	private int _lastRoomId;
 
 	public GameServer(int listenPort) {
 		_server = new TcpListener(IPAddress.Any, listenPort);
 		_receivedPacketQueue = new ConcurrentQueue<(PlayerConnection playerConnection, IPacket packet)>();
 		_playerConnections = new Dictionary<PlayerConnection, Guid>();
-		_rooms = new List<Room>();
+		Rooms = new List<Room>();
 		_lastRoomId = 0;
 	}
 
@@ -53,7 +52,7 @@ public class GameServer : IDisposable {
 					HandlePacket(packet, playerConnection);
 				}
 			}
-		});
+		}).ConfigureAwait(false);
 
 		// 클라이언트 접속 처리
 		while (true) {
@@ -93,14 +92,14 @@ public class GameServer : IDisposable {
 
 	private void HandleClientQuit(PlayerConnection playerConnection) {
 		// 방에 존재한 플레이어였는지 확인
-		var room = _rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
+		var room = Rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
 		if (room != null) {
 			// 방에 있었다면 방에서 제거
 			room.RemovePlayer(playerConnection);
 
 			// 방이 비었다면 방 제거
 			if (room.IsEmpty()) {
-				_rooms.Remove(room);
+				Rooms.Remove(room);
 				Logger.Info($"Room {room.RoomName} ({room.RoomId}) removed");
 			}
 		}
@@ -151,7 +150,7 @@ public class GameServer : IDisposable {
 	}
 
 	private void HandleClientRequestRoomListPacket(PlayerConnection playerConnection, ClientRequestRoomListPacket packet) {
-		playerConnection.SendPacket(new ServerResponseRoomListPacket(_rooms.Select(x => x.GetRoomInfo()).ToList()));
+		playerConnection.SendPacket(new ServerResponseRoomListPacket(Rooms.Select(x => x.GetRoomInfo()).ToList()));
 	}
 
 	private void HandleClientRequestCreateRoomPacket(PlayerConnection playerConnection, ClientRequestCreateRoomPacket packet) {
@@ -159,8 +158,8 @@ public class GameServer : IDisposable {
 		var roomId = _lastRoomId++;
 
 		// 새로운 방 생성 후 추가
-		var room = new Room(roomName, roomId, playerConnection);
-		_rooms.Add(room);
+		var room = new Room(this, roomName, roomId, playerConnection);
+		Rooms.Add(room);
 
 		// 방 생성 알림 -> 씬 이동
 		playerConnection.SendPacket(new ServerResponseCreateRoomPacket(roomId));
@@ -169,20 +168,18 @@ public class GameServer : IDisposable {
 		room.BroadcastState();
 
 		room.BroadcastPacket(new ServerLobbyAnnouncePacket("[공지] 방이 생성되었습니다."));
-
-		Logger.Info($"Room created: {roomName} ({roomId})");
 	}
 
 	private void HandleClientRequestJoinRoomPacket(PlayerConnection playerConnection, ClientRequestJoinRoomPacket packet) {
 		var roomId = packet.RoomId;
 
 		// 모든 방의 ID가 주어진 ID와 모두 다르다면(=같은 ID인 방이 없다면)
-		if (_rooms.All(x => x.RoomId != roomId)) {
+		if (Rooms.All(x => x.RoomId != roomId)) {
 			playerConnection.SendPacket(new ServerResponseJoinRoomPacket("방이 존재하지 않습니다."));
 			return;
 		}
 
-		var room = _rooms.First(x => x.RoomId == roomId);
+		var room = Rooms.First(x => x.RoomId == roomId);
 
 		if (room.IsFull()) {
 			playerConnection.SendPacket(new ServerResponseJoinRoomPacket("방이 꽉 찼습니다."));
@@ -205,7 +202,7 @@ public class GameServer : IDisposable {
 		var roomId = packet.RoomId;
 
 		// 해당 ID의 방 찾기
-		var room = _rooms.FirstOrDefault(x => x.RoomId == roomId);
+		var room = Rooms.FirstOrDefault(x => x.RoomId == roomId);
 
 		// 방이 없다면
 		if (room == null) {
@@ -227,14 +224,14 @@ public class GameServer : IDisposable {
 
 		// 만약 유저가 나갔는데 방이 비었다면
 		if (room.IsEmpty()) {
-			_rooms.Remove(room);
+			Rooms.Remove(room);
 			Logger.Info($"Room {room.RoomName} ({room.RoomId}) removed");
 		}
 	}
 
 	private void HandleClientChatPacket(PlayerConnection playerConnection, ClientChatPacket packet) {
 		// 해당 ID의 방 찾기
-		var room = _rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
+		var room = Rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
 
 		if (room == null) {
 			Logger.Error($"Room not found for {playerConnection.Nickname} ({playerConnection.Id})");
@@ -247,7 +244,7 @@ public class GameServer : IDisposable {
 
 	private void HandleClientRequestStartPacket(PlayerConnection playerConnection, ClientRequestStartPacket packet) {
 		// 해당 ID의 방 찾기
-		var room = _rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
+		var room = Rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
 
 		// 방이 없다면 오류
 		if (room == null) {
@@ -264,7 +261,7 @@ public class GameServer : IDisposable {
 
 	private void HandleClientRequestDragPacket(PlayerConnection playerConnection, ClientRequestDragPacket packet) {
 		// 해당 ID의 방 찾기
-		var room = _rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
+		var room = Rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
 
 		// 방이 없다면 오류
 		if (room == null) {

@@ -18,6 +18,8 @@ public class Room {
 	private const int PEACH_COUNT = 200;
 	private const int PEACH_COLUMN = 20;
 
+	private GameServer _server;
+
 	// 방 상태 관련
 	public readonly string RoomName;
 	public readonly int RoomId;
@@ -30,10 +32,11 @@ public class Room {
 	private Random _random;
 	private int _leftTime;
 	private CancellationTokenSource _tickCts = new CancellationTokenSource();
-	private Dictionary<PlayerConnection, int> _score;
-	private Dictionary<(int x, int y), int> _map;
+	private readonly Dictionary<PlayerConnection, int> _score;
+	private readonly Dictionary<(int x, int y), int> _map;
 
-	public Room(string roomName, int roomId, PlayerConnection owner) {
+	public Room(GameServer gameServer, string roomName, int roomId, PlayerConnection owner) {
+		_server = gameServer;
 		RoomName = roomName;
 		RoomId = roomId;
 		Players = new List<PlayerConnection> {
@@ -57,6 +60,8 @@ public class Room {
 			}
 			Console.WriteLine();
 		}
+
+		Logger.Info($"Room created: {roomName} ({roomId})");
 	}
 
 	#region 플레이어 입장 처리 로직
@@ -117,17 +122,20 @@ public class Room {
 
 				// 게임 종료 체크
 				if (_leftTime <= 0) {
-					StopGame();
+					EndGame();
 				}
 				await Task.Delay(TimeSpan.FromSeconds(1));
 			}
 		}, _tickCts.Token);
 	}
 
-	public void StopGame() {
+	public void EndGame() {
 		_state = RoomState.Ending;
 		_tickCts.Cancel();
+		_server.Rooms.Remove(this);
 		BroadcastState();
+
+		Logger.Info($"Room removed: {RoomName} ({RoomId})");
 	}
 
 	public void HandleDrag(PlayerConnection playerConnection, ClientRequestDragPacket packet) {
@@ -151,6 +159,11 @@ public class Room {
 
 			BroadcastPacket(new ServerResponseDragPacket(playerConnection.Id, positions));
 			BroadcastState();
+
+			// 모든 복숭아를 다 먹었는지 확인
+			if (_score.Values.Sum() == PEACH_COUNT) {
+				EndGame();
+			}
 		}
 	}
 
