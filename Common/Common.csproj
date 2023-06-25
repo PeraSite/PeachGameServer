@@ -7,8 +7,4 @@
         <RootNamespace>PeachGame.Common</RootNamespace>
     </PropertyGroup>
 
-    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-      <Exec Command="copy $(OutDir)\$(TargetFileName) &quot;E:\UnityProjects\PeachGame\Assets\Plugins\PeachGame.Common.dll&quot;&#xA;copy $(OutDir)\$(TargetName).pdb &quot;E:\UnityProjects\PeachGame\Assets\Plugins\PeachGame.Common.pdb&quot;&#xA;" />
-    </Target>
-
 </Project>

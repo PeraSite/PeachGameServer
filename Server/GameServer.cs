@@ -43,7 +43,7 @@ public class GameServer : IDisposable {
 		Logger.Debug($"Server started at {_server.LocalEndpoint}");
 
 		// Packet Dequeue Task
-		Task.Run(() => {
+		_ = Task.Run(() => {
 			while (true) {
 				if (_receivedPacketQueue.TryDequeue(out var tuple)) {
 					var (playerConnection, packet) = tuple;
@@ -52,7 +52,7 @@ public class GameServer : IDisposable {
 					HandlePacket(packet, playerConnection);
 				}
 			}
-		}).ConfigureAwait(false);
+		});
 
 		// 클라이언트 접속 처리
 		while (true) {

@@ -29,7 +29,6 @@ public class Room {
 
 	// 플레이 로직 관련
 	public int Seed { get; }
-	private Random _random;
 	private int _leftTime;
 	private CancellationTokenSource _tickCts = new CancellationTokenSource();
 	private readonly Dictionary<PlayerConnection, int> _score;
@@ -49,13 +48,13 @@ public class Room {
 
 		// 현재 Tick Count로 랜덤 시드 설정 후 랜덤 생성
 		Seed = Environment.TickCount;
-		_random = new Random(Seed);
+		Random random = new Random(Seed);
 
 		// 시드 기반으로 맵 생성
 		_map = new Dictionary<(int x, int y), int>();
 		for (var y = 0; y < PEACH_COUNT / PEACH_COLUMN; y++) {
 			for (var x = 0; x < PEACH_COLUMN; x++) {
-				_map[(x, y)] = _random.Next(1, 10);
+				_map[(x, y)] = random.Next(1, 10);
 				Console.Write(_map[(x, y)] + " ");
 			}
 			Console.WriteLine();
@@ -141,11 +140,6 @@ public class Room {
 	public void HandleDrag(PlayerConnection playerConnection, ClientRequestDragPacket packet) {
 		(int x, int y)[] positions = packet.Positions;
 		var sum = positions.Sum(pos => _map[pos]);
-
-		foreach (var (x, y) in positions) {
-			Logger.Debug($"{x} {y} - {_map[(x, y)]}");
-		}
-		Logger.Debug($"=> Sum : {sum}");
 
 		// 선택한 복숭아의 합이 10이라면
 		if (sum == 10) {
