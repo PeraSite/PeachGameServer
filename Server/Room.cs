@@ -155,7 +155,7 @@ public class Room {
 			MaxPlayers = MAX_PLAYER,
 			State = _state,
 			Owner = Owner.Id,
-			Score = _score.ToDictionary(x => x.Key.Nickname, x => x.Value),
+			Score = _score.ToDictionary(x => x.Key.Id, x => x.Value),
 			LeftTime = _leftTime
 		};
 	}

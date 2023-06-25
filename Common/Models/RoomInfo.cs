@@ -12,9 +12,8 @@ namespace PeachGame.Common.Models {
 		public List<PlayerInfo> Players;
 		public int MaxPlayers;
 		public Guid Owner;
-		public Dictionary<string, int> Score;
+		public Dictionary<Guid, int> Score;
 		public int LeftTime;
-
 
 		public int CurrentPlayers => Players.Count;
 
@@ -40,10 +39,10 @@ namespace PeachGame.Common.Models {
 			Players = reader.ReadSerializableList<PlayerInfo>();
 			MaxPlayers = reader.ReadInt32();
 			Owner = reader.ReadGuid();
-			Score = new Dictionary<string, int>();
+			Score = new Dictionary<Guid, int>();
 			var scoreSize = reader.ReadInt32();
 			for (int i = 0; i < scoreSize; i++) {
-				var name = reader.ReadString();
+				var name = reader.ReadGuid();
 				var score = reader.ReadInt32();
 				Score[name] = score;
 			}
