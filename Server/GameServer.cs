@@ -251,9 +251,9 @@ public class GameServer : IDisposable {
 			playerConnection.SendPacket(new ServerResponseStartPacket("당신은 방에 참여하고 있지 않습니다."));
 			return;
 		}
-		
-		// 씬 이동시키기
-		room.BroadcastPacket(new ServerResponseStartPacket(room.RoomId));
+
+		// 씬 이동시키고 시드 설정
+		room.BroadcastPacket(new ServerResponseStartPacket(room.RoomId, room.Seed));
 
 		// 게임 State 변동
 		room.StartGame();

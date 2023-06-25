@@ -23,6 +23,8 @@ public class Room {
 	private RoomState _state;
 
 	// 플레이 로직 관련
+	public int Seed { get; }
+	private Random _random;
 	private int _leftTime;
 	private CancellationTokenSource _tickCts = new CancellationTokenSource();
 	private Dictionary<PlayerConnection, int> _score;
@@ -37,6 +39,10 @@ public class Room {
 		_state = RoomState.Waiting;
 		_leftTime = -1;
 		_score = new Dictionary<PlayerConnection, int>();
+
+		// 현재 Tick Count로 랜덤 시드 설정 후 랜덤 생성
+		Seed = Environment.TickCount;
+		_random = new Random(Seed);
 	}
 
 	#region 플레이어 입장 처리 로직
@@ -115,6 +121,7 @@ public class Room {
 			}).ToList(),
 			MaxPlayers = MAX_PLAYER,
 			State = _state,
+			Owner = Owner.Id,
 			Score = _score.ToDictionary(x => x.Key.Nickname, x => x.Value),
 			LeftTime = _leftTime
 		};

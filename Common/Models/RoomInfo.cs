@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,8 +11,10 @@ namespace PeachGame.Common.Models {
 		public RoomState State;
 		public List<PlayerInfo> Players;
 		public int MaxPlayers;
+		public Guid Owner;
 		public Dictionary<string, int> Score;
 		public int LeftTime;
+
 
 		public int CurrentPlayers => Players.Count;
 
@@ -21,13 +24,12 @@ namespace PeachGame.Common.Models {
 			writer.Write((byte)State);
 			writer.Write(Players);
 			writer.Write(MaxPlayers);
-
+			writer.Write(Owner);
 			writer.Write(Score.Count);
 			foreach (var (name, score) in Score) {
 				writer.Write(name);
 				writer.Write(score);
 			}
-
 			writer.Write(LeftTime);
 		}
 
@@ -37,7 +39,7 @@ namespace PeachGame.Common.Models {
 			State = (RoomState)reader.ReadByte();
 			Players = reader.ReadSerializableList<PlayerInfo>();
 			MaxPlayers = reader.ReadInt32();
-
+			Owner = reader.ReadGuid();
 			Score = new Dictionary<string, int>();
 			var scoreSize = reader.ReadInt32();
 			for (int i = 0; i < scoreSize; i++) {
@@ -53,6 +55,7 @@ namespace PeachGame.Common.Models {
 			       $"Id:{RoomId}, " +
 			       $"Name:{Name}, " +
 			       $"State:{State}, " +
+			       $"Owner: {Owner}" +
 			       $"Players({CurrentPlayers}/{MaxPlayers}): {string.Join(", ", Players.Select(x => x.Nickname))}, " +
 			       $"Score: {string.Join(", ", Score.Select(x => $"{x.Key}={x.Value}"))}, " +
 			       $"LeftTime: {LeftTime}}}";
