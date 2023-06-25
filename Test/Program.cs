@@ -1,36 +1,15 @@
-﻿using PeachGame.Common.Models;
-using PeachGame.Common.Packets;
-using PeachGame.Common.Packets.Server;
+﻿using System.Net;
+using System.Net.Sockets;
+using PeachGame.Common.Packets.Client;
 using PeachGame.Common.Serialization;
+var client = new TcpClient();
+client.Connect(IPAddress.Parse("152.67.203.160"), 9999);
 
-var playerList = new List<PlayerInfo>() {
-	new PlayerInfo() {
-		Nickname = "Player 1",
-		IsOwner = true
-	},
-	new PlayerInfo() {
-		Nickname = "Player 2",
-		IsOwner = false
-	},
-};
+NetworkStream stream = client.GetStream();
+BinaryWriter writer = new BinaryWriter(stream);
+BinaryReader reader = new BinaryReader(stream);
 
-var roomInfo = new RoomInfo() {
-	Name = "Test Room",
-	State = RoomState.Waiting,
-	MaxPlayers = 4,
-	RoomId = 0,
-	Players = playerList
-};
+writer.Write(new ClientPingPacket(Guid.NewGuid(), "Test Nickname"));
 
-var packet = new ServerRoomStatePacket(roomInfo);
-
-using var ms = new MemoryStream();
-using var writer = new BinaryWriter(ms);
-writer.Write((IPacket)packet);
-
-var bytes = ms.ToArray();
-Console.WriteLine($"Bytes: {string.Join(", ", bytes)}");
-
-using var reader = new BinaryReader(new MemoryStream(bytes));
-var deserializedRoomInfo = reader.ReadPacket();
-Console.WriteLine($"Deserialized: {deserializedRoomInfo}");
+var read = reader.ReadPacket();
+Console.Write(read);
