@@ -55,9 +55,9 @@ public class Room {
 		for (var y = 0; y < PEACH_COUNT / PEACH_COLUMN; y++) {
 			for (var x = 0; x < PEACH_COLUMN; x++) {
 				_map[(x, y)] = random.Next(1, 10);
-				Console.Write(_map[(x, y)] + " ");
+				// Console.Write(_map[(x, y)] + " ");
 			}
-			Console.WriteLine();
+			// Console.WriteLine();
 		}
 
 		Logger.Info($"Room created: {roomName} ({roomId})");
