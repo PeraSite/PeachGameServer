@@ -9,8 +9,8 @@ namespace PeachGame.Server;
 internal static class Program {
 	private static async Task Main() {
 		// 콘솔 입출력 한글 깨짐 수정
-		Console.InputEncoding = Encoding.Unicode;
-		Console.OutputEncoding = Encoding.Unicode;
+		Console.InputEncoding = Encoding.UTF8;
+		Console.OutputEncoding = Encoding.UTF8;
 
 		// 환경변수 가져오기
 		var listenPort = int.Parse(GetEnvironmentVariable("LISTEN_PORT"));
