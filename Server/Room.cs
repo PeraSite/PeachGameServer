@@ -139,6 +139,28 @@ public class Room {
 
 	public void HandleDrag(PlayerConnection playerConnection, ClientRequestDragPacket packet) {
 		(int x, int y)[] positions = packet.Positions;
+
+		// 좌표값 검증 - 오류 값 방지
+		if (positions.Length < 2) return;
+		if (positions.Distinct().Count() != positions.Length) return;
+		if (positions.Any(pos => pos.x < 0 || pos.x >= PEACH_COLUMN || pos.y < 0 || pos.y >= PEACH_COUNT / PEACH_COLUMN)) return;
+
+		// 좌표값 직사각형 꼴 검증
+		var minX = positions.Min(pos => pos.x);
+		var maxX = positions.Max(pos => pos.x);
+		var minY = positions.Min(pos => pos.y);
+		var maxY = positions.Max(pos => pos.y);
+
+		// 최소부터 최대까지 반복했을 때, 목록 안에 없다면 무시
+		for (var y = minY; y <= maxY; y++) {
+			for (var x = minX; x <= maxX; x++) {
+				if (positions.Contains((x, y))) continue;
+
+				Logger.Error($"Invalid drag positions from player:{playerConnection}, packet:{packet}");
+				return;
+			}
+		}
+
 		var sum = positions.Sum(pos => _map[pos]);
 
 		// 선택한 복숭아의 합이 10이라면
