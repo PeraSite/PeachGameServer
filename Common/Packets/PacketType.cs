@@ -30,6 +30,8 @@ namespace PeachGame.Common.Packets {
 
 		ClientRequestDrag,
 		ServerResponseDrag,
+
+		ClientSelectRange,
 	}
 
 	public static class PacketTypes {
@@ -60,6 +62,8 @@ namespace PeachGame.Common.Packets {
 
 				PacketType.ClientRequestDrag => new ClientRequestDragPacket(),
 				PacketType.ServerResponseDrag => new ServerResponseDragPacket(),
+
+				PacketType.ClientSelectRange => new ClientSelectRangePacket(),
 				_ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
 			};
 			packet.Deserialize(reader);

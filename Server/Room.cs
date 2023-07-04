@@ -183,6 +183,13 @@ public class Room {
 		}
 	}
 
+	public void HandleSelectRange(PlayerConnection playerConnection, ClientSelectRangePacket packet) {
+		// 보낸 유저를 제외하고 타 유저에게 Broadcast
+		foreach (PlayerConnection connection in Players/*.Where(x => x.Id != packet.ClientId)*/) {
+			connection.SendPacket(packet);
+		}
+	}
+
 	#region 유틸 함수
 	public RoomInfo GetRoomInfo() {
 		return new RoomInfo {

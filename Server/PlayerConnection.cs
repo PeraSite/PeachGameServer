@@ -45,7 +45,7 @@ public class PlayerConnection : IDisposable {
 			return packet;
 		}
 		catch (ArgumentOutOfRangeException) {
-			return null;
+			throw;
 		}
 		catch (Exception e) {
 			Console.WriteLine(e);
@@ -76,6 +76,9 @@ public class PlayerConnection : IDisposable {
 	}
 
 	protected bool Equals(PlayerConnection other) {
+		if (Id != Guid.Empty && other.Id != Guid.Empty) {
+			return Id.Equals(other.Id);
+		}
 		return Ip.Equals(other.Ip);
 	}
 
