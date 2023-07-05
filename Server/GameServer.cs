@@ -66,7 +66,7 @@ public class GameServer : IDisposable {
 		Logger.Info($"Client connected from {tcpClient.Client.RemoteEndPoint}");
 
 		var playerConnection = new PlayerConnection(tcpClient);
-		_playerConnections[playerConnection] = Guid.Empty;
+		_playerConnections[playerConnection] = playerConnection.Id;
 
 		Task.Run(() => {
 			try {
@@ -146,10 +146,8 @@ public class GameServer : IDisposable {
 	}
 
 	private void HandleClientPingPacket(PlayerConnection playerConnection, ClientPingPacket packet) {
-		_playerConnections[playerConnection] = packet.ClientId;
-		playerConnection.Id = packet.ClientId;
 		playerConnection.Nickname = packet.Nickname;
-		playerConnection.SendPacket(new ServerPongPacket(packet.ClientId));
+		playerConnection.SendPacket(new ServerPongPacket(playerConnection.Id));
 	}
 
 	private void HandleClientRequestRoomListPacket(PlayerConnection playerConnection, ClientRequestRoomListPacket packet) {

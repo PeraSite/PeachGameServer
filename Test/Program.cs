@@ -9,7 +9,7 @@ NetworkStream stream = client.GetStream();
 BinaryWriter writer = new BinaryWriter(stream);
 BinaryReader reader = new BinaryReader(stream);
 
-writer.Write(new ClientPingPacket(Guid.NewGuid(), "Test Nickname"));
+writer.Write(new ClientPingPacket("Test Nickname"));
 
 var read = reader.ReadPacket();
 Console.Write(read);

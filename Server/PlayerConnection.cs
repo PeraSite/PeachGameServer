@@ -17,7 +17,7 @@ public class PlayerConnection : IDisposable {
 	public BinaryWriter Writer { get; }
 	public EndPoint? Endpoint => Client.Client.RemoteEndPoint;
 
-	public Guid Id;
+	public Guid Id { get; }
 	public string Nickname;
 
 	public PlayerConnection(TcpClient client) {
@@ -26,7 +26,7 @@ public class PlayerConnection : IDisposable {
 		Writer = new BinaryWriter(Stream);
 		Reader = new BinaryReader(Stream);
 
-		Id = Guid.Empty;
+		Id = Guid.NewGuid();
 		Nickname = string.Empty;
 	}
 
@@ -76,10 +76,7 @@ public class PlayerConnection : IDisposable {
 	}
 
 	protected bool Equals(PlayerConnection other) {
-		if (Id != Guid.Empty && other.Id != Guid.Empty) {
-			return Id.Equals(other.Id);
-		}
-		return Endpoint != null && Equals(Endpoint, other.Endpoint);
+		return Id.Equals(other.Id);
 	}
 
 	public override bool Equals(object? obj) {
@@ -90,9 +87,6 @@ public class PlayerConnection : IDisposable {
 	}
 
 	public override int GetHashCode() {
-		if (Id != Guid.Empty) return Id.GetHashCode();
-		if (Endpoint != null) return Endpoint.GetHashCode();
-
-		throw new Exception("Can't get hash code of PlayerConnection without Id or Endpoint");
+		return Id.GetHashCode();
 	}
 }
