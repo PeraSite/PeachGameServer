@@ -104,7 +104,7 @@ public class GameServer : IDisposable {
 			}
 		}
 
-		Logger.Info($"Client disconnected from {playerConnection.Ip}");
+		Logger.Info($"Client disconnected from {playerConnection.Endpoint}");
 
 		// 클라이언트 닫기
 		playerConnection.Dispose();

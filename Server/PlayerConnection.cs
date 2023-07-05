@@ -15,7 +15,7 @@ public class PlayerConnection : IDisposable {
 	public NetworkStream Stream { get; }
 	public BinaryReader Reader { get; }
 	public BinaryWriter Writer { get; }
-	public IPEndPoint Ip => (IPEndPoint)Client.Client.RemoteEndPoint!;
+	public EndPoint? Endpoint => Client.Client.RemoteEndPoint;
 
 	public Guid Id;
 	public string Nickname;
@@ -64,7 +64,7 @@ public class PlayerConnection : IDisposable {
 	}
 
 	public override string ToString() {
-		return string.IsNullOrWhiteSpace(Nickname) ? $"{Ip.Address}:{Ip.Port}" : Nickname;
+		return string.IsNullOrWhiteSpace(Nickname) ? $"{Endpoint}" : Nickname;
 	}
 
 	public void Dispose() {
@@ -79,7 +79,7 @@ public class PlayerConnection : IDisposable {
 		if (Id != Guid.Empty && other.Id != Guid.Empty) {
 			return Id.Equals(other.Id);
 		}
-		return Ip.Equals(other.Ip);
+		return Endpoint != null && Equals(Endpoint, other.Endpoint);
 	}
 
 	public override bool Equals(object? obj) {
@@ -90,6 +90,9 @@ public class PlayerConnection : IDisposable {
 	}
 
 	public override int GetHashCode() {
-		return Ip.GetHashCode();
+		if (Id != Guid.Empty) return Id.GetHashCode();
+		if (Endpoint != null) return Endpoint.GetHashCode();
+
+		throw new Exception("Can't get hash code of PlayerConnection without Id or Endpoint");
 	}
 }
