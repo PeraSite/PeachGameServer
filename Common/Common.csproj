@@ -7,4 +7,16 @@
         <RootNamespace>PeachGame.Common</RootNamespace>
     </PropertyGroup>
 
+    <ItemGroup>
+        <Content Include="Common.csproj.user"/>
+    </ItemGroup>
+
+    <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+        <Error Text="The DllOutputPath property must be set!" Condition="'$(DllOutputPath)' == ''"/>
+    </Target>
+
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+        <Exec Command="copy $(OutDir)\$(TargetFileName) &quot;$(DllOutputPath)\PeachGame.Common.dll&quot;&#xA;copy $(OutDir)\$(TargetName).pdb &quot;$(DllOutputPath)\PeachGame.Common.pdb&quot;&#xA;"/>
+    </Target>
+
 </Project>
