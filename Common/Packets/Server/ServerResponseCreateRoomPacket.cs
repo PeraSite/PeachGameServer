@@ -19,7 +19,7 @@ namespace PeachGame.Common.Packets.Server {
 		}
 
 		public override string ToString() {
-			return $"{nameof(ServerResponseCreateRoomPacket)} {{ {nameof(RoomId)}: {RoomId}}}";
+			return $"{nameof(ServerResponseCreateRoomPacket)} {{ {nameof(RoomId)}: {RoomId} }}";
 		}
 	}
 }

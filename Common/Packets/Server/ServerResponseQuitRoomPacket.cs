@@ -28,7 +28,7 @@ namespace PeachGame.Common.Packets.Server {
 		}
 
 		public override string ToString() {
-			return $"{nameof(ServerResponseQuitRoomPacket)} {{ {nameof(Success)}: {Success}, {nameof(ErrorMessage)}: {ErrorMessage}}}";
+			return $"{nameof(ServerResponseQuitRoomPacket)} {{ {nameof(Success)}: {Success}, {nameof(ErrorMessage)}: {ErrorMessage} }}";
 		}
 	}
 }

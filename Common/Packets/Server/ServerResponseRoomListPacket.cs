@@ -23,7 +23,7 @@ namespace PeachGame.Common.Packets.Server {
 		}
 
 		public override string ToString() {
-			return $"{nameof(ServerResponseRoomListPacket)} {{{string.Join(", ", InfoList.Select(info => $"{info.Name} ({info.CurrentPlayers}/{info.MaxPlayers})"))}}}";
+			return $"{nameof(ServerResponseRoomListPacket)} {{{string.Join(", ", InfoList.Select(info => $"{info.Name} ({info.CurrentPlayers}/{info.MaxPlayers})"))} }}";
 		}
 	}
 }

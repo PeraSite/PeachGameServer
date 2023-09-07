@@ -19,7 +19,7 @@ namespace PeachGame.Common.Packets.Client {
 		}
 
 		public override string ToString() {
-			return $"{nameof(ClientRequestStartPacket)} {{ {nameof(RoomId)}: {RoomId}}}";
+			return $"{nameof(ClientRequestStartPacket)} {{ {nameof(RoomId)}: {RoomId} }}";
 		}
 	}
 }
