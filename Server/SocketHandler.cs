@@ -109,39 +109,11 @@ public class SocketHandler : WebSocketBehavior {
 		// 방 생성 알림 -> 씬 이동
 		playerConnection.SendPacket(new ServerResponseCreateRoomPacket(room.RoomId));
 
-		// 씬 이동까지 기다리고, 패킷 Broadcast 해야함
-
 		// 방 상태 업데이트 -> UI 표기
 		room.BroadcastState();
 
 		room.BroadcastPacket(new ServerLobbyAnnouncePacket("[공지] 방이 생성되었습니다."));
 	}
-
-	// private void HandleClientRequestRoomStatePacket(PlayerConnection playerConnection, ClientRequestRoomStatePacket packet) {
-	// 	// 해당 ID의 방 찾기
-	// 	var room = _server.Rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
-	//
-	// 	// 방이 없다면 오류
-	// 	if (room == null) {
-	// 		Logger.Error($"Room not found for {playerConnection.Nickname} ({playerConnection.Id})");
-	// 		return;
-	// 	}
-	//
-	// 	playerConnection.SendPacket(new ServerRoomStatePacket(room.GetRoomInfo()));
-	// }
-
-	// private void HandleClientRoomJoinedPacket(PlayerConnection playerConnection, ClientRoomJoinedPacket packet) {
-	// 	// 해당 ID의 방 찾기
-	// 	var room = _server.Rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
-	//
-	// 	if (room == null) {
-	// 		Logger.Error($"Room not found for {playerConnection.Nickname} ({playerConnection.Id})");
-	// 		return;
-	// 	}
-	//
-	// 	// 방을 찾았다면, 채팅 메시지 Broadcast
-	// 	room.BroadcastPacket(packet);
-	// }
 
 	private void HandleClientRequestJoinRoomPacket(PlayerConnection playerConnection, ClientRequestJoinRoomPacket packet) {
 		var roomId = packet.RoomId;
