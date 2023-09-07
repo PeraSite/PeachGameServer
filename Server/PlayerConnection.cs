@@ -1,92 +1,58 @@
-﻿using System;
-using System.IO;
-using System.Net;
-using System.Net.Sockets;
+﻿using System.IO;
 using log4net;
 using PeachGame.Common.Packets;
 using PeachGame.Common.Serialization;
+using WebSocketSharp;
+using WebSocketSharp.Server;
 
 namespace PeachGame.Server;
 
-public class PlayerConnection : IDisposable {
+public class PlayerConnection {
 	private static readonly ILog Logger = LogManager.GetLogger(typeof(PlayerConnection));
 
-	public TcpClient Client { get; }
-	public NetworkStream Stream { get; }
-	public BinaryReader Reader { get; }
-	public BinaryWriter Writer { get; }
-	public EndPoint? Endpoint => Client.Client.RemoteEndPoint;
+	public IWebSocketSession Session { get; }
 
-	public Guid Id { get; }
+	public string Id => Session.ID;
 	public string Nickname;
 
-	public PlayerConnection(TcpClient client) {
-		Client = client;
-		Stream = Client.GetStream();
-		Writer = new BinaryWriter(Stream);
-		Reader = new BinaryReader(Stream);
-
-		Id = Guid.NewGuid();
+	public PlayerConnection(IWebSocketSession session) {
+		Session = session;
 		Nickname = string.Empty;
 	}
 
-	public IPacket? ReadPacket() {
-		var id = Stream.ReadByte();
-
-		// 더 이상 읽을 바이트가 없다면 리턴
-		if (id == -1) return null;
-
-		try {
-			// 타입에 맞는 패킷 객체 생성
-			var packetType = (PacketType)id;
-
-			var packet = packetType.CreatePacket(Reader);
-			Logger.Debug($"[C({ToString()}) -> S] {packet}");
-			return packet;
-		}
-		catch (ArgumentOutOfRangeException) {
-			throw;
-		}
-		catch (Exception e) {
-			Console.WriteLine(e);
-			return null;
-		}
-	}
-
 	public void SendPacket(IPacket packet) {
-		if (!Stream.CanWrite) return;
-		if (!Client.Connected) {
-			Logger.Error($"[S -> C({ToString()})] Cannot send packet due to disconnected: {packet}");
+		if (Session.State != WebSocketState.Open) {
+			Logger.Warn($"[S -> C({ToString()})] Cannot send packet when state is {Session.State}");
 			return;
 		}
 		Logger.Debug($"[S -> C({ToString()})] {packet}");
-		Writer.Write(packet);
+
+		// TODO: MemoryStream pooling?
+		using MemoryStream ms = new MemoryStream();
+		using var writer = new BinaryWriter(ms);
+		writer.Write(packet);
+		writer.Flush();
+
+		var data = ms.ToArray();
+		Session.Context.WebSocket.Send(data);
 	}
 
 	public override string ToString() {
-		return string.IsNullOrWhiteSpace(Nickname) ? $"{Endpoint}" : Nickname;
+		return string.IsNullOrWhiteSpace(Nickname) ? $"{Session.ID}" : Nickname;
 	}
 
-	public void Dispose() {
-		Stream.Dispose();
-		Reader.Dispose();
-		Writer.Dispose();
-		Client.Dispose();
-		GC.SuppressFinalize(this);
-	}
-
-	protected bool Equals(PlayerConnection other) {
-		return Id.Equals(other.Id);
+	private bool Equals(PlayerConnection other) {
+		return Session.ID.Equals(other.Session.ID);
 	}
 
 	public override bool Equals(object? obj) {
 		if (ReferenceEquals(null, obj)) return false;
 		if (ReferenceEquals(this, obj)) return true;
 		if (obj.GetType() != this.GetType()) return false;
-		return Equals((PlayerConnection)obj);
+		return Equals((PlayerConnection) obj);
 	}
 
 	public override int GetHashCode() {
-		return Id.GetHashCode();
+		return Session.ID.GetHashCode();
 	}
 }

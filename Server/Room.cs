@@ -13,18 +13,22 @@ namespace PeachGame.Server;
 
 public class Room {
 	private static readonly ILog Logger = LogManager.GetLogger(typeof(Room));
+
+	// 상수
 	private const int MAX_PLAYER = 4;
 	private const int PLAY_TIME = 60 * 2; // 2분
 	private const int PEACH_COUNT = 200;
 	private const int PEACH_COLUMN = 20;
 
-	private GameServer _server;
+	// 이벤트
+	public event Action OnStart = () => { };
+	public event Action OnEnd = () => { };
 
 	// 방 상태 관련
 	public readonly string RoomName;
 	public readonly int RoomId;
-	public PlayerConnection Owner;
 	public readonly List<PlayerConnection> Players;
+	private PlayerConnection _owner;
 	private RoomState _state;
 
 	// 플레이 로직 관련
@@ -34,14 +38,13 @@ public class Room {
 	private readonly Dictionary<PlayerConnection, int> _score;
 	private readonly Dictionary<(int x, int y), int> _map;
 
-	public Room(GameServer gameServer, string roomName, int roomId, PlayerConnection owner) {
-		_server = gameServer;
+	public Room(string roomName, int roomId, PlayerConnection owner) {
 		RoomName = roomName;
 		RoomId = roomId;
 		Players = new List<PlayerConnection> {
 			owner
 		};
-		Owner = owner;
+		_owner = owner;
 		_state = RoomState.Waiting;
 		_leftTime = -1;
 		_score = new Dictionary<PlayerConnection, int>();
@@ -84,13 +87,13 @@ public class Room {
 		_score.Remove(playerConnection);
 
 		// 만약 방장이 나갔다면
-		if (Equals(Owner, playerConnection)) {
+		if (Equals(_owner, playerConnection)) {
 			// 방장을 첫 플레이어로 변경
 			PlayerConnection? newOwner = Players.FirstOrDefault();
 
 			// 첫 플레이어가 존재할 때만 변경
 			if (newOwner != null) {
-				Owner = newOwner;
+				_owner = newOwner;
 				BroadcastPacket(new ServerLobbyAnnouncePacket($"[공지] {newOwner.Nickname}님이 방장이 되었습니다."));
 			}
 		}
@@ -111,6 +114,7 @@ public class Room {
 			_score[playerConnection] = 0;
 		}
 		BroadcastState();
+		OnStart();
 
 		// 메인 Update 로직
 		Task.Run(async () => {
@@ -131,9 +135,8 @@ public class Room {
 	public void EndGame() {
 		_state = RoomState.Ending;
 		_tickCts.Cancel();
-		_server.Rooms.Remove(this);
 		BroadcastState();
-
+		OnEnd();
 		Logger.Info($"Room removed: {RoomName} ({RoomId})");
 	}
 
@@ -196,13 +199,13 @@ public class Room {
 			RoomId = RoomId,
 			Name = RoomName,
 			Players = Players.Select(player => new PlayerInfo {
-				IsOwner = Equals(player, Owner),
+				IsOwner = Equals(player, _owner),
 				Id = player.Id,
 				Nickname = player.Nickname
 			}).ToList(),
 			MaxPlayers = MAX_PLAYER,
 			State = _state,
-			Owner = Owner.Id,
+			Owner = _owner.Id,
 			Score = _score.ToDictionary(x => x.Key.Id, x => x.Value),
 			LeftTime = _leftTime
 		};
@@ -233,7 +236,7 @@ public class Room {
 		if (ReferenceEquals(null, obj)) return false;
 		if (ReferenceEquals(this, obj)) return true;
 		if (obj.GetType() != this.GetType()) return false;
-		return Equals((Room)obj);
+		return Equals((Room) obj);
 	}
 	public override int GetHashCode() {
 		return RoomId;

@@ -6,9 +6,9 @@ namespace PeachGame.Common.Packets.Server {
 	public struct ServerPongPacket : IPacket {
 		public PacketType Type => PacketType.ServerPong;
 
-		public Guid ClientId { get; private set; }
+		public string ClientId { get; private set; }
 
-		public ServerPongPacket(Guid clientId) {
+		public ServerPongPacket(string clientId) {
 			ClientId = clientId;
 		}
 
@@ -17,7 +17,7 @@ namespace PeachGame.Common.Packets.Server {
 		}
 
 		public void Deserialize(BinaryReader reader) {
-			ClientId = reader.ReadGuid();
+			ClientId = reader.ReadString();
 		}
 
 		public override string ToString() {

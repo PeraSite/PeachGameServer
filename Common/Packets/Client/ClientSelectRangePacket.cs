@@ -1,19 +1,17 @@
-using System;
 using System.IO;
-using PeachGame.Common.Serialization;
 
 namespace PeachGame.Common.Packets.Client {
 	public struct ClientSelectRangePacket : IPacket {
 		public PacketType Type => PacketType.ClientSelectRange;
 
-		public Guid ClientId { get; private set; }
+		public string ClientId { get; private set; }
 		public bool Dragging { get; private set; }
 		public float MinX { get; private set; }
 		public float MaxX { get; private set; }
 		public float MinY { get; private set; }
 		public float MaxY { get; private set; }
 
-		public ClientSelectRangePacket(Guid clientId, bool dragging, float minX, float maxX, float minY, float maxY) {
+		public ClientSelectRangePacket(string clientId, bool dragging, float minX, float maxX, float minY, float maxY) {
 			ClientId = clientId;
 			Dragging = dragging;
 			MinX = minX;
@@ -32,7 +30,7 @@ namespace PeachGame.Common.Packets.Client {
 		}
 
 		public void Deserialize(BinaryReader reader) {
-			ClientId = reader.ReadGuid();
+			ClientId = reader.ReadString();
 			Dragging = reader.ReadBoolean();
 			MinX = reader.ReadSingle();
 			MaxX = reader.ReadSingle();

@@ -11,8 +11,8 @@ namespace PeachGame.Common.Models {
 		public RoomState State;
 		public List<PlayerInfo> Players;
 		public int MaxPlayers;
-		public Guid Owner;
-		public Dictionary<Guid, int> Score;
+		public string Owner;
+		public Dictionary<string, int> Score;
 		public int LeftTime;
 
 		public int CurrentPlayers => Players.Count;
@@ -20,12 +20,14 @@ namespace PeachGame.Common.Models {
 		public void Serialize(BinaryWriter writer) {
 			writer.Write(RoomId);
 			writer.Write(Name);
-			writer.Write((byte)State);
+			writer.Write((byte) State);
 			writer.Write(Players);
 			writer.Write(MaxPlayers);
 			writer.Write(Owner);
 			writer.Write(Score.Count);
-			foreach (var (name, score) in Score) {
+			foreach (KeyValuePair<string,int> pair in Score) {
+				var name = pair.Key;
+				var score = pair.Value;
 				writer.Write(name);
 				writer.Write(score);
 			}
@@ -35,16 +37,16 @@ namespace PeachGame.Common.Models {
 		public void Deserialize(BinaryReader reader) {
 			RoomId = reader.ReadInt32();
 			Name = reader.ReadString();
-			State = (RoomState)reader.ReadByte();
+			State = (RoomState) reader.ReadByte();
 			Players = reader.ReadSerializableList<PlayerInfo>();
 			MaxPlayers = reader.ReadInt32();
-			Owner = reader.ReadGuid();
-			Score = new Dictionary<Guid, int>();
+			Owner = reader.ReadString();
+			Score = new Dictionary<string, int>();
 			var scoreSize = reader.ReadInt32();
 			for (int i = 0; i < scoreSize; i++) {
-				var name = reader.ReadGuid();
+				var playerId = reader.ReadString();
 				var score = reader.ReadInt32();
-				Score[name] = score;
+				Score[playerId] = score;
 			}
 			LeftTime = reader.ReadInt32();
 		}

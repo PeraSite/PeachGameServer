@@ -1,11 +1,10 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using PeachGame.Common.Serialization;
 
 namespace PeachGame.Common.Models {
 	public struct PlayerInfo : ISerializable {
 		public string Nickname;
-		public Guid Id;
+		public string Id;
 		public bool IsOwner;
 
 		public void Serialize(BinaryWriter writer) {
@@ -16,7 +15,7 @@ namespace PeachGame.Common.Models {
 
 		public void Deserialize(BinaryReader reader) {
 			Nickname = reader.ReadString();
-			Id = reader.ReadGuid();
+			Id = reader.ReadString();
 			IsOwner = reader.ReadBoolean();
 		}
 	}

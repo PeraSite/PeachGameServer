@@ -1,16 +1,14 @@
-using System;
 using System.IO;
 using System.Linq;
-using PeachGame.Common.Serialization;
 
 namespace PeachGame.Common.Packets.Server {
 	public struct ServerResponseDragPacket : IPacket {
 		public PacketType Type => PacketType.ServerResponseDrag;
 
-		public Guid PlayerId;
+		public string PlayerId;
 		public (int x, int y)[] Positions { get; private set; }
 
-		public ServerResponseDragPacket(Guid playerId, (int x, int y)[] positions) {
+		public ServerResponseDragPacket(string playerId, (int x, int y)[] positions) {
 			PlayerId = playerId;
 			Positions = positions;
 		}
@@ -25,7 +23,7 @@ namespace PeachGame.Common.Packets.Server {
 		}
 
 		public void Deserialize(BinaryReader reader) {
-			PlayerId = reader.ReadGuid();
+			PlayerId = reader.ReadString();
 			var length = reader.ReadInt32();
 			Positions = new (int x, int y)[length];
 			for (var i = 0; i < length; i++) {

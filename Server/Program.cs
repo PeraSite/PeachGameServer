@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Text;
-using System.Threading.Tasks;
 using log4net.Config;
 [assembly: XmlConfigurator(ConfigFile = "log4net.config")]
 
 namespace PeachGame.Server;
 
 internal static class Program {
-	private static async Task Main() {
+	private static void Main() {
 		// 콘솔 입출력 한글 깨짐 수정
 		Console.InputEncoding = Encoding.UTF8;
 		Console.OutputEncoding = Encoding.UTF8;
@@ -16,8 +15,13 @@ internal static class Program {
 		var listenPort = int.Parse(GetEnvironmentVariable("LISTEN_PORT"));
 
 		// 서버 시작
-		using GameServer server = new GameServer(listenPort);
-		await server.Start();
+		GameServer server = new GameServer(listenPort);
+		server.Start();
+
+		Console.ReadKey();
+
+		// Graceful stop
+		server.Stop();
 	}
 
 	private static string GetEnvironmentVariable(string key)
