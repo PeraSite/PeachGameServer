@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using log4net;
@@ -15,26 +14,26 @@ namespace PeachGame.Server;
 public class SocketHandler : WebSocketBehavior {
 	private static readonly ILog Logger = LogManager.GetLogger(typeof(SocketHandler));
 
-	private readonly Dictionary<string, PlayerConnection> _playerConnections = new Dictionary<string, PlayerConnection>();
+	private readonly GameServer _server;
 
-	// 방 관련 State
-	private readonly List<Room> _rooms = new List<Room>();
-	private int _lastRoomId;
+	public SocketHandler(GameServer gameServer) {
+		_server = gameServer;
+	}
 
 	protected override void OnOpen() {
 		Logger.Info($"Client connected: {ID}");
 
 		var session = Sessions[ID];
 		var playerConnection = new PlayerConnection(session);
-		_playerConnections[ID] = playerConnection;
+		_server.PlayerConnections[ID] = playerConnection;
 	}
 
 	protected override void OnClose(CloseEventArgs e) {
 		Logger.Info($"Client closed: {ID}, reason: {e.Reason}, code: {e.Code}");
 
-		if (!_playerConnections.TryGetValue(ID, out var playerConnection)) return;
+		if (!_server.PlayerConnections.TryGetValue(ID, out var playerConnection)) return;
 
-		var room = _rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
+		var room = _server.Rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
 		if (room == null) return;
 
 		// 방에 있었다면 방에서 제거
@@ -42,7 +41,7 @@ public class SocketHandler : WebSocketBehavior {
 
 		// 방이 비었다면 방 제거
 		if (!room.IsEmpty()) return;
-		_rooms.Remove(room);
+		_server.Rooms.Remove(room);
 		Logger.Info($"Room {room.RoomName} ({room.RoomId}) removed");
 	}
 
@@ -53,7 +52,7 @@ public class SocketHandler : WebSocketBehavior {
 		var reader = new BinaryReader(new MemoryStream(data));
 
 		var packet = reader.ReadPacket();
-		if (!_playerConnections.TryGetValue(ID, out var playerConnection)) return;
+		if (!_server.PlayerConnections.TryGetValue(ID, out var playerConnection)) return;
 
 		HandlePacket(packet, playerConnection);
 	}
@@ -98,21 +97,19 @@ public class SocketHandler : WebSocketBehavior {
 	}
 
 	private void HandleClientRequestRoomListPacket(PlayerConnection playerConnection, ClientRequestRoomListPacket packet) {
-		playerConnection.SendPacket(new ServerResponseRoomListPacket(_rooms.Select(x => x.GetRoomInfo()).ToList()));
+		playerConnection.SendPacket(new ServerResponseRoomListPacket(_server.Rooms.Select(x => x.GetRoomInfo()).ToList()));
 	}
 
 	private void HandleClientRequestCreateRoomPacket(PlayerConnection playerConnection, ClientRequestCreateRoomPacket packet) {
 		var roomName = packet.Name;
-		var roomId = _lastRoomId++;
 
 		// 새로운 방 생성 후 추가
-		var room = new Room(roomName, roomId, playerConnection);
-		_rooms.Add(room);
-
-		//TODO: Add callback to when room end, remove room from _rooms list
+		var room = _server.CreateRoom(roomName, playerConnection);
 
 		// 방 생성 알림 -> 씬 이동
-		playerConnection.SendPacket(new ServerResponseCreateRoomPacket(roomId));
+		playerConnection.SendPacket(new ServerResponseCreateRoomPacket(room.RoomId));
+
+		// 씬 이동까지 기다리고, 패킷 Broadcast 해야함
 
 		// 방 상태 업데이트 -> UI 표기
 		room.BroadcastState();
@@ -120,16 +117,42 @@ public class SocketHandler : WebSocketBehavior {
 		room.BroadcastPacket(new ServerLobbyAnnouncePacket("[공지] 방이 생성되었습니다."));
 	}
 
+	// private void HandleClientRequestRoomStatePacket(PlayerConnection playerConnection, ClientRequestRoomStatePacket packet) {
+	// 	// 해당 ID의 방 찾기
+	// 	var room = _server.Rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
+	//
+	// 	// 방이 없다면 오류
+	// 	if (room == null) {
+	// 		Logger.Error($"Room not found for {playerConnection.Nickname} ({playerConnection.Id})");
+	// 		return;
+	// 	}
+	//
+	// 	playerConnection.SendPacket(new ServerRoomStatePacket(room.GetRoomInfo()));
+	// }
+
+	// private void HandleClientRoomJoinedPacket(PlayerConnection playerConnection, ClientRoomJoinedPacket packet) {
+	// 	// 해당 ID의 방 찾기
+	// 	var room = _server.Rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
+	//
+	// 	if (room == null) {
+	// 		Logger.Error($"Room not found for {playerConnection.Nickname} ({playerConnection.Id})");
+	// 		return;
+	// 	}
+	//
+	// 	// 방을 찾았다면, 채팅 메시지 Broadcast
+	// 	room.BroadcastPacket(packet);
+	// }
+
 	private void HandleClientRequestJoinRoomPacket(PlayerConnection playerConnection, ClientRequestJoinRoomPacket packet) {
 		var roomId = packet.RoomId;
 
 		// 모든 방의 ID가 주어진 ID와 모두 다르다면(=같은 ID인 방이 없다면)
-		if (_rooms.All(x => x.RoomId != roomId)) {
+		if (_server.Rooms.All(x => x.RoomId != roomId)) {
 			playerConnection.SendPacket(new ServerResponseJoinRoomPacket("방이 존재하지 않습니다."));
 			return;
 		}
 
-		var room = _rooms.First(x => x.RoomId == roomId);
+		var room = _server.Rooms.First(x => x.RoomId == roomId);
 
 		if (room.IsFull()) {
 			playerConnection.SendPacket(new ServerResponseJoinRoomPacket("방이 꽉 찼습니다."));
@@ -152,7 +175,7 @@ public class SocketHandler : WebSocketBehavior {
 		var roomId = packet.RoomId;
 
 		// 해당 ID의 방 찾기
-		var room = _rooms.FirstOrDefault(x => x.RoomId == roomId);
+		var room = _server.Rooms.FirstOrDefault(x => x.RoomId == roomId);
 
 		// 방이 없다면
 		if (room == null) {
@@ -174,14 +197,14 @@ public class SocketHandler : WebSocketBehavior {
 
 		// 만약 유저가 나갔는데 방이 비었다면
 		if (room.IsEmpty()) {
-			_rooms.Remove(room);
+			_server.Rooms.Remove(room);
 			Logger.Info($"Room {room.RoomName} ({room.RoomId}) removed");
 		}
 	}
 
 	private void HandleClientChatPacket(PlayerConnection playerConnection, ClientChatPacket packet) {
 		// 해당 ID의 방 찾기
-		var room = _rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
+		var room = _server.Rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
 
 		if (room == null) {
 			Logger.Error($"Room not found for {playerConnection.Nickname} ({playerConnection.Id})");
@@ -194,7 +217,7 @@ public class SocketHandler : WebSocketBehavior {
 
 	private void HandleClientRequestStartPacket(PlayerConnection playerConnection, ClientRequestStartPacket packet) {
 		// 해당 ID의 방 찾기
-		var room = _rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
+		var room = _server.Rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
 
 		// 방이 없다면 오류
 		if (room == null) {
@@ -211,7 +234,7 @@ public class SocketHandler : WebSocketBehavior {
 
 	private void HandleClientRequestDragPacket(PlayerConnection playerConnection, ClientRequestDragPacket packet) {
 		// 해당 ID의 방 찾기
-		var room = _rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
+		var room = _server.Rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
 
 		// 방이 없다면 오류
 		if (room == null) {
@@ -224,7 +247,7 @@ public class SocketHandler : WebSocketBehavior {
 
 	private void HandleClientSelectRangePacket(PlayerConnection playerConnection, ClientSelectRangePacket packet) {
 		// 해당 ID의 방 찾기
-		var room = _rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
+		var room = _server.Rooms.FirstOrDefault(x => x.Players.Contains(playerConnection));
 
 		// 방이 없다면 오류
 		if (room == null) {

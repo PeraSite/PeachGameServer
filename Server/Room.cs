@@ -229,9 +229,10 @@ public class Room {
 		return $"Room {RoomId} ({Players.Count}/{MAX_PLAYER})";
 	}
 
-	protected bool Equals(Room other) {
+	private bool Equals(Room other) {
 		return RoomId == other.RoomId;
 	}
+
 	public override bool Equals(object? obj) {
 		if (ReferenceEquals(null, obj)) return false;
 		if (ReferenceEquals(this, obj)) return true;

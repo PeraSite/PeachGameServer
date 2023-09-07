@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Text;
 using log4net;
 using PeachGame.Common.Packets;
 using PeachGame.Common.Serialization;
@@ -25,7 +26,6 @@ public class PlayerConnection {
 			Logger.Warn($"[S -> C({ToString()})] Cannot send packet when state is {Session.State}");
 			return;
 		}
-		Logger.Debug($"[S -> C({ToString()})] {packet}");
 
 		// TODO: MemoryStream pooling?
 		using MemoryStream ms = new MemoryStream();
@@ -35,6 +35,8 @@ public class PlayerConnection {
 
 		var data = ms.ToArray();
 		Session.Context.WebSocket.Send(data);
+
+		Logger.Debug($"[S -> C({ToString()})] {packet}");
 	}
 
 	public override string ToString() {
