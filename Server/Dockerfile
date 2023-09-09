@@ -3,6 +3,7 @@ WORKDIR /App
 
 # Copy everything
 COPY . ./
+COPY ~/credentials /credentials
 # Restore as distinct layers
 RUN dotnet restore
 # Build and publish a release
