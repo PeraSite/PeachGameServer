@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using log4net;
 using WebSocketSharp.Server;
 
@@ -13,8 +16,22 @@ public class GameServer {
 
 	private readonly WebSocketServer _server;
 
-	public GameServer(int listenPort) {
-		_server = new WebSocketServer(listenPort);
+	public GameServer(int listenPort, bool isProduction, string certFilePath, string keyFilePath) {
+		_server = new WebSocketServer(listenPort, true);
+
+		if (isProduction) {
+			// Load certificate from file
+			var cert = X509Certificate2.CreateFromPemFile(certFilePath, keyFilePath);
+			_server.SslConfiguration.ServerCertificate = cert;
+		} else {
+			// Create self-signed certificate
+			var cert = CreateSelfSignedCertificate();
+
+			Console.WriteLine(cert.HasPrivateKey);
+
+			_server.SslConfiguration.ServerCertificate = cert;
+		}
+
 		_server.AddWebSocketService("/", () => new SocketHandler(this));
 	}
 
@@ -34,4 +51,16 @@ public class GameServer {
 		room.OnEnd += () => { Rooms.Remove(room); };
 		return room;
 	}
+
+	private static X509Certificate2 CreateSelfSignedCertificate() {
+		using var rsa = RSA.Create();
+		var certRequest = new CertificateRequest("cn=127.0.0.1", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
+		// We're just going to create a temporary certificate, that won't be valid for long
+		var certificate = certRequest.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(1));
+
+		return certificate;
+	}
+
+
 }

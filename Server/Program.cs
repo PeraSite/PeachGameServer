@@ -29,9 +29,12 @@ internal class ShutdownService : IHostedService {
 	public ShutdownService() {
 		// 환경변수 가져오기
 		var listenPort = int.Parse(GetEnvironmentVariable("LISTEN_PORT"));
+		var isProduction = bool.Parse(Environment.GetEnvironmentVariable("IS_PRODUCTION") ?? "false");
+		var certFilePath = Environment.GetEnvironmentVariable("CERT_FILE_PATH") ?? string.Empty;
+		var keyFilePath = Environment.GetEnvironmentVariable("KEY_FILE_PATH") ?? string.Empty;
 
 		// 서버 시작
-		_server = new GameServer(listenPort);
+		_server = new GameServer(listenPort, isProduction, certFilePath, keyFilePath);
 	}
 
 	public Task StartAsync(CancellationToken cancellationToken) {
